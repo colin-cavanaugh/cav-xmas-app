@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   Dimensions,
+  ToastAndroid,
 } from 'react-native'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -40,7 +41,6 @@ const Login = props => {
         const { token } = response.data.data
         await AsyncStorage.setItem('userToken', token)
         login(token)
-        navigation.navigate('Home')
       } else {
         console.error('Login Failed:', message)
       }
@@ -62,7 +62,12 @@ const Login = props => {
         }
       )
       if (response.data && response.data.status === 'success') {
-        navigation.navigate('Login') // Navigate to the login page.
+        ToastAndroid.showWithGravity(
+          `Successfully Registered as ${username}!`,
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER
+        )
+        handleLogin()
       } else {
         console.error('Registration Failed:', response.data.message)
       }

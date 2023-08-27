@@ -7,16 +7,14 @@ import { useUser } from './components/API/AuthService.js'
 // Components
 import Header from './components/Header/Header'
 import Login from './components/Login/Login'
-// import Register from './components/Registration/Register'
 import Home from './components/Home/Home'
-// import MyProfile from './components/MyProfile/MyProfile'
+import Profile from './components/Profile/Profile'
 
 type RootStackParamList = {
   Home: undefined
-  // MyProfile: undefined
+  Profile: undefined
   Details: { itemId: number }
   Login: undefined
-  // Register: undefined
 }
 
 const DetailsScreen: React.FC = () => {
@@ -34,6 +32,7 @@ function App() {
   // const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   const { user, logout } = useUser()
+  console.log('User State in App:', user)
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen)
@@ -58,7 +57,7 @@ function App() {
           }}
         >
           <Stack.Screen name='Home' component={Home} />
-          {/* <Stack.Screen name='MyProfile' component={MyProfile} /> */}
+          <Stack.Screen name='Profile' component={Profile} />
           <Stack.Screen name='Details' component={DetailsScreen} />
         </Stack.Navigator>
       ) : (
@@ -68,11 +67,6 @@ function App() {
             component={Login}
             options={{ headerShown: false }}
           />
-          {/* <Stack.Screen
-            name='Register'
-            component={Register}
-            options={{ headerShown: false }}
-          /> */}
         </Stack.Navigator>
       )}
     </NavigationContainer>

@@ -44,7 +44,10 @@ const Header = ({ navigation, user, logout, toggleMenu, menuOpen }) => {
   if (!user) {
     return null
   }
-
+  const handleLogout = () => {
+    logout()
+    toggleMenu()
+  }
   return (
     <View style={styles.headerContainer}>
       <View style={styles.logoDiv}>
@@ -69,6 +72,7 @@ const Header = ({ navigation, user, logout, toggleMenu, menuOpen }) => {
             <TouchableOpacity
               onPress={() => {
                 navigation.navigate('Home')
+                toggleMenu()
               }}
               style={styles.menuItem}
             >
@@ -78,45 +82,49 @@ const Header = ({ navigation, user, logout, toggleMenu, menuOpen }) => {
           <Animated.View style={{ opacity: fadeValues[1] }}>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('MyProfile')
+                navigation.navigate('Profile')
+                toggleMenu()
               }}
               style={styles.menuItem}
             >
-              <Text style={styles.menuText}>My Profile</Text>
+              <Text style={styles.menuText}>Profile</Text>
             </TouchableOpacity>
           </Animated.View>
           <Animated.View style={{ opacity: fadeValues[2] }}>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('MyLists')
+                navigation.navigate('Lists')
+                toggleMenu()
               }}
               style={styles.menuItem}
             >
-              <Text style={styles.menuText}>My Lists</Text>
+              <Text style={styles.menuText}>Lists</Text>
             </TouchableOpacity>
           </Animated.View>
           <Animated.View style={{ opacity: fadeValues[3] }}>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('MyGroups')
+                navigation.navigate('Groups')
+                toggleMenu()
               }}
               style={styles.menuItem}
             >
-              <Text style={styles.menuText}>My Groups</Text>
+              <Text style={styles.menuText}>Groups</Text>
             </TouchableOpacity>
           </Animated.View>
           <Animated.View style={{ opacity: fadeValues[4] }}>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('MyGifts')
+                navigation.navigate('Gifts')
+                toggleMenu()
               }}
               style={styles.menuItem}
             >
-              <Text style={styles.menuText}>My Gifts</Text>
+              <Text style={styles.menuText}>Gifts</Text>
             </TouchableOpacity>
           </Animated.View>
           <Animated.View style={{ opacity: fadeValues[5] }}>
-            <TouchableOpacity onPress={logout} style={styles.menuItem}>
+            <TouchableOpacity onPress={handleLogout} style={styles.menuItem}>
               <Text style={styles.menuText}>Logout</Text>
             </TouchableOpacity>
           </Animated.View>

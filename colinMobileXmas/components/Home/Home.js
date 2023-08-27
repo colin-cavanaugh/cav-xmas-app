@@ -1,5 +1,6 @@
 import { View, Text, Image, StyleSheet } from 'react-native'
 import { useState } from 'react'
+import Section from '../Section/Section'
 
 const Home = () => {
   //   const [isLoggedIn, setLoggedIn] = useState(false)

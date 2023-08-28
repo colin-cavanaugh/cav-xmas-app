@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "529278848657",
+    "project_id": "colinmobilexmas",
+    "storage_bucket": "colinmobilexmas.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:529278848657:android:0d015fac9a94ed7de63930",
+        "android_client_info": {
+          "package_name": "com.colinmobilexmas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "529278848657-g76lk4ql5mrlfv2663qg95r6ord7303s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMuXdSMzyuntsePaK3FLPQX5sNFKk3Y1g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "529278848657-g76lk4ql5mrlfv2663qg95r6ord7303s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

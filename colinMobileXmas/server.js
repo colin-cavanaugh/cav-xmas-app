@@ -3,7 +3,7 @@ dotenv.config()
 const express = require('express')
 const cors = require('cors')
 const bcrypt = require('bcrypt')
-const { MongoClient } = require('mongodb')
+const { MongoClient, ObjectID } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const SECRET_KEY = process.env.SECRET_KEY
 const app = express()
@@ -165,7 +165,7 @@ app.put('api/user/:id/photo', async (req, res) => {
       .db('cavanaughDB')
       .collection('users')
       .updateOne(
-        { _id: new require('mongodb').ObjectID(userId) },
+        { _id: new ObjectID(userId) },
         { $set: { photoUrl: photoUrl } }
       )
 

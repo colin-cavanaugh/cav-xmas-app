@@ -3,7 +3,7 @@ dotenv.config()
 const express = require('express')
 const cors = require('cors')
 const bcrypt = require('bcrypt')
-const { MongoClient, ObjectID } = require('mongodb')
+const { MongoClient, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const SECRET_KEY = process.env.SECRET_KEY
 const app = express()
@@ -156,29 +156,60 @@ app.get('/api/validate-token', cors(), authenticateJWT, (req, res) => {
 // })
 
 ///////////////// Upload Photo Endpoint //////////////////////
-app.put('api/user/:id/photo', async (req, res) => {
+app.put('/api/user/:id/photo', async (req, res) => {
+  console.log('Reached upload Image API Endpoint')
   try {
     const userId = req.params.id // "id" because in your route it's defined as `:id`, not `:_id`
+    console.log('User Id: ', userId)
     const { photoUrl } = req.body
-
+    console.log('Request body:', req.body)
+    console.log('PhotoURL: ', photoUrl)
+    if (!photoUrl) {
+      return res.status(400).send({ error: 'photoUrl is required.' })
+    }
     const result = await client
       .db('cavanaughDB')
       .collection('users')
       .updateOne(
-        { _id: new ObjectID(userId) },
+        { _id: new ObjectId(userId) },
         { $set: { photoUrl: photoUrl } }
       )
 
     if (result.matchedCount === 0) {
       return res.status(404).send({ error: 'User not found' })
     }
+    if (result.matchedCount != 0 && result.modifiedCount === 0) {
+      return res
+        .status(304)
+        .send({ message: 'User found, but no modifications were made.' })
+    }
 
-    res.send({ success: true, photoUrl })
+    res.send({
+      success: `Successfully uploaded profile photo for ${userId}`,
+      photoUrl,
+    })
   } catch (error) {
-    res.status(500).send({ error: 'An error occured uploading photo' })
+    res.status(500).send({ error: `An error occured ${error.message}` })
+    console.error('Error encountered:', error)
   }
 })
-
+///////////////// Display Photo Endpoint //////////////////////
+app.get('/api/user/:id', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.params.id
+    const user = await client
+      .db('cavanaughDB')
+      .collection('users')
+      .findOne({ _id: new ObjectId(userId) })
+    if (!user) {
+      return res.status(404).send({ error: 'User not found' })
+    }
+    res.send({ username: user.username, photoUrl: user.photoUrl })
+  } catch (error) {
+    res.status(500).send({ error: `An error occurred ${error.message}` })
+    console.error('Error encountered:', error)
+  }
+})
 app.listen(port, () => {
   console.log(`Server started on http://localhost:${port}`)
 })

@@ -16,6 +16,7 @@ const Header = ({ navigation, user, logout, toggleMenu, menuOpen }) => {
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
+    new Animated.Value(0),
   ])
 
   useEffect(() => {
@@ -93,6 +94,17 @@ const Header = ({ navigation, user, logout, toggleMenu, menuOpen }) => {
           <Animated.View style={{ opacity: fadeValues[2] }}>
             <TouchableOpacity
               onPress={() => {
+                navigation.navigate('AddFriends')
+                toggleMenu()
+              }}
+              style={styles.menuItem}
+            >
+              <Text style={styles.menuText}>Add Friends</Text>
+            </TouchableOpacity>
+          </Animated.View>
+          <Animated.View style={{ opacity: fadeValues[3] }}>
+            <TouchableOpacity
+              onPress={() => {
                 navigation.navigate('Lists')
                 toggleMenu()
               }}
@@ -101,18 +113,18 @@ const Header = ({ navigation, user, logout, toggleMenu, menuOpen }) => {
               <Text style={styles.menuText}>Lists</Text>
             </TouchableOpacity>
           </Animated.View>
-          <Animated.View style={{ opacity: fadeValues[3] }}>
+          <Animated.View style={{ opacity: fadeValues[4] }}>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('Groups')
+                navigation.navigate('Events')
                 toggleMenu()
               }}
               style={styles.menuItem}
             >
-              <Text style={styles.menuText}>Groups</Text>
+              <Text style={styles.menuText}>Events</Text>
             </TouchableOpacity>
           </Animated.View>
-          <Animated.View style={{ opacity: fadeValues[4] }}>
+          <Animated.View style={{ opacity: fadeValues[5] }}>
             <TouchableOpacity
               onPress={() => {
                 navigation.navigate('Gifts')
@@ -123,7 +135,7 @@ const Header = ({ navigation, user, logout, toggleMenu, menuOpen }) => {
               <Text style={styles.menuText}>Gifts</Text>
             </TouchableOpacity>
           </Animated.View>
-          <Animated.View style={{ opacity: fadeValues[5] }}>
+          <Animated.View style={{ opacity: fadeValues[6] }}>
             <TouchableOpacity onPress={handleLogout} style={styles.menuItem}>
               <Text style={styles.menuText}>Logout</Text>
             </TouchableOpacity>

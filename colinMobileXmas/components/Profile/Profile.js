@@ -1,14 +1,19 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { View, Text, Image, TouchableOpacity } from 'react-native'
+import { View, Text, Image, Button, TouchableOpacity } from 'react-native'
 import { useUser } from '../API/AuthService.js'
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker'
 import storage from '@react-native-firebase/storage'
+// import { BACKEND_URL } from '@env'
 
 const Profile = () => {
   // const [userPhoto, setUserPhoto] = useState(null)
   const { user, setUser } = useUser()
   const userId = user?.userId
+
+  useEffect(() => {
+    console.log('User state changed Profile Component:', user)
+  }, [user])
 
   const pickImage = () => {
     const options = {
@@ -83,20 +88,35 @@ const Profile = () => {
   }
 
   return (
-    <View>
-      <Text>Profile Component</Text>
+    <View style={{ alignItems: 'center', flex: 1 }}>
+      <Text>Profile Photo</Text>
 
       {user && user.photoUrl ? (
         <Image
           source={{ uri: user.photoUrl }}
-          style={{ width: 100, height: 100, borderRadius: 50 }}
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+          }}
         />
       ) : (
-        <Text>No profile photo uploaded yet</Text>
+        <View
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+            backgroundColor: '#E0E0E0',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Text>No Image</Text>
+        </View>
       )}
-      <TouchableOpacity onPress={pickImage}>
-        <Text>Upload Image</Text>
-      </TouchableOpacity>
+      {/* <TouchableOpacity onPress={pickImage}> */}
+      <Button title='Upload Image' onPress={pickImage} />
+      {/* </TouchableOpacity> */}
     </View>
   )
 }

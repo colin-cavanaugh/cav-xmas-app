@@ -10,6 +10,7 @@ const app = express()
 const port = 8000
 const uri = process.env.CONNECTIONSTRING
 const client = new MongoClient(uri)
+const User = require('./models/userModel')
 
 app.use(
   cors({
@@ -22,11 +23,16 @@ app.use(
 app.use(express.json())
 app.options('*', cors()) // <-- This enables pre-flight response for all routes
 app.use((req, res, next) => {
-  console.log(res.getHeaders())
-  console.log(req.headers.origin)
   console.log(`[${req.method}] ${req.path}`)
-  console.log('Headers:', req.headers)
-  console.log('Body:', req.body)
+
+  if (Object.keys(req.query).length > 0) {
+    console.log('Query:', req.query)
+  }
+
+  if (Object.keys(req.body).length > 0) {
+    console.log('Body:', req.body)
+  }
+
   next()
 })
 ///////////////// Response Helper Function //////////////////////
@@ -48,7 +54,7 @@ const authenticateJWT = (req, res, next) => {
         console.error('Token verification failed:', err)
         return sendResponse(res, 'error', null, 'Token not valid')
       }
-      console.log(user)
+      console.log('Decoded user data from JWT:', user)
       req.user = user
       next()
     })
@@ -75,6 +81,7 @@ app.get('/', (req, res) => {
 
 ///////////////// Register API Endpoint //////////////////////
 app.post('/api/register', async (req, res) => {
+  console.log('POST api/register endpoint called')
   const { username, password } = req.body
 
   //Hash the password
@@ -94,7 +101,7 @@ app.post('/api/register', async (req, res) => {
 })
 ///////////////// Login API Endpoint //////////////////////
 app.post('/api/login', async (req, res) => {
-  console.log('Login route hit')
+  console.log('POST api/login endpoint called')
   const { username, password } = req.body
   try {
     const user = await client
@@ -126,6 +133,7 @@ app.post('/api/login', async (req, res) => {
 
 ///////////////// Groups API Endpoint //////////////////////
 app.post('/api/groups', async (req, res) => {
+  console.log('POST api/groups endpoint called')
   const group = req.body
   console.log('Reached /api/groups endpoint')
   try {
@@ -138,7 +146,7 @@ app.post('/api/groups', async (req, res) => {
 })
 ///////////////// Validate Token Endpoint //////////////////////
 app.get('/api/validate-token', cors(), authenticateJWT, (req, res) => {
-  console.log('Reached /api/validate-token endpoint')
+  console.log('GET api/validate-token endpoint called')
   // If we reach this line, the token is valid (because of the middleware)
   sendResponse(res, 'success', { userId: req.user.userId }, 'Token is valid')
 })
@@ -157,7 +165,7 @@ app.get('/api/validate-token', cors(), authenticateJWT, (req, res) => {
 
 ///////////////// Upload Photo Endpoint //////////////////////
 app.put('/api/user/:id/photo', async (req, res) => {
-  console.log('Reached upload Image API Endpoint')
+  console.log('PUT api/user/:id/photo endpoint called')
   try {
     const userId = req.params.id // "id" because in your route it's defined as `:id`, not `:_id`
     console.log('User Id: ', userId)
@@ -193,23 +201,212 @@ app.put('/api/user/:id/photo', async (req, res) => {
     console.error('Error encountered:', error)
   }
 })
-///////////////// Display Photo Endpoint //////////////////////
-app.get('/api/user/:id', authenticateJWT, async (req, res) => {
+///////////////// Search Users Endpoint //////////////////////
+app.get('/api/user/search', authenticateJWT, async (req, res) => {
+  console.log('GET api/user/search endpoint called')
   try {
-    const userId = req.params.id
+    const username = req.query.username
+    console.log('Received username:', username)
+    if (!username) {
+      console.log('Missing username. Query parameters:', req.query)
+      return res
+        .status(400)
+        .send({ error: 'Username query parameter is required' })
+    }
     const user = await client
       .db('cavanaughDB')
       .collection('users')
-      .findOne({ _id: new ObjectId(userId) })
+      .findOne(
+        { username: new RegExp(`^${username}$`, 'i') },
+        { projection: { username: 1 } }
+      )
     if (!user) {
       return res.status(404).send({ error: 'User not found' })
     }
-    res.send({ username: user.username, photoUrl: user.photoUrl })
+    res.send([user])
   } catch (error) {
     res.status(500).send({ error: `An error occurred ${error.message}` })
     console.error('Error encountered:', error)
   }
 })
+///////////////// Send Friend Request Endpoint //////////////////////
+app.post(
+  '/api/user/:id/sendFriendRequest',
+  authenticateJWT,
+  async (req, res) => {
+    console.log('POST api/user/:id/sendFriendRequest endpoint called')
+    console.log('Received userId:', req.params.id) // Debug log
+    console.log('Received friendId:', req.body.friendId) // Debug log
+    const userId = req.params.id
+    const friendId = req.body.friendId // Assume this is passed in the request body
+    try {
+      await client
+        .db('cavanaughDB')
+        .collection('users')
+        .updateOne(
+          { _id: new ObjectId(friendId) },
+          { $addToSet: { friendRequests: new ObjectId(userId) } }
+        )
+      // Update sender's sentRequests
+      await client
+        .db('cavanaughDB')
+        .collection('users')
+        .updateOne(
+          { _id: new ObjectId(userId) },
+          { $addToSet: { sentRequests: friendId } }
+        )
+      res.status(200).send('Friend request sent')
+    } catch (error) {
+      console.error('Detailed Error:', error)
+      res.status(500).send('An error occurred')
+    }
+  }
+)
+///////////////// Fetch Sent Friend Requests Endpoint //////////////////////
+app.get(
+  '/api/user/:id/sentFriendRequests',
+  authenticateJWT,
+  async (req, res) => {
+    console.log('GET api/user/:id/sentFriendRequests endpoint called')
+    console.log('Received userId:', req.params.id) // Debug log
+
+    const userId = req.params.id
+
+    try {
+      const user = await client
+        .db('cavanaughDB')
+        .collection('users')
+        .findOne(
+          { _id: new ObjectId(userId) },
+          { projection: { sentRequests: 1 } }
+        )
+
+      if (!user) {
+        return res.status(404).send({ error: 'User not found' })
+      }
+
+      res.status(200).send(user.sentRequests)
+    } catch (error) {
+      console.error('Detailed Error:', error)
+      res.status(500).send('An error occurred')
+    }
+  }
+)
+///////////////// Fetch Received Friend Requests Endpoint //////////////////////
+app.get(
+  '/api/user/:id/receivedFriendRequests',
+  authenticateJWT,
+  async (req, res) => {
+    const userId = req.params.id
+
+    try {
+      const user = await client
+        .db('cavanaughDB')
+        .collection('users')
+        .findOne(
+          { _id: new ObjectId(userId) },
+          { projection: { friendRequests: 1 } } // Fetch friendRequests, not sentRequests
+        )
+
+      if (!user) {
+        return res.status(404).send({ error: 'User not found' })
+      }
+
+      res.status(200).send(user.friendRequests) // Send the received friend requests
+    } catch (error) {
+      console.error('Detailed Error:', error)
+      res.status(500).send('An error occurred')
+    }
+  }
+)
+///////////////// Accept Friend Request Endpoint //////////////////////
+app.post('/api/user/:id/acceptFriendRequest', async (req, res) => {
+  const userId = req.params.id
+  const friendId = req.body.friendId
+  try {
+    // Remove the friend request
+    await client
+      .db('cavanaughDB')
+      .collection('users')
+      .updateOne(
+        { _id: new ObjectId(userId) },
+        { $pull: { friendRequests: new ObjectId(friendId) } }
+      )
+
+    // Add each user to the other's friends list
+    await client
+      .db('cavanaughDB')
+      .collection('users')
+      .updateOne(
+        { _id: new ObjectId(userId) },
+        { $push: { friends: new ObjectId(friendId) } }
+      )
+
+    await client
+      .db('cavanaughDB')
+      .collection('users')
+      .updateOne(
+        { _id: new ObjectId(friendId) },
+        { $push: { friends: new ObjectId(userId) } }
+      )
+
+    res.status(200).send('Friend request accepted')
+  } catch (error) {
+    console.error('Detailed Error:', error)
+    res.status(500).send('An error occurred')
+  }
+})
+///////////////// User Id Endpoint //////////////////////
+app.get('/api/user/:id', authenticateJWT, async (req, res) => {
+  console.log('GET api/user/:id endpoint called')
+  try {
+    const userId = req.params.id
+
+    if (!userId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res
+        .status(400)
+        .send({ error: 'Invalid userId format api/user/:id endpoint' })
+    }
+
+    const user = await client
+      .db('cavanaughDB')
+      .collection('users')
+      .findOne({ _id: new ObjectId(userId) })
+
+    console.log('Found user:', user) // Debug log
+
+    if (!user) {
+      return res.status(404).send({ error: 'User not found' })
+    }
+    res.send({
+      username: user.username,
+      photoUrl: user.photoUrl,
+      sentRequests: user.sentRequests,
+      friendRequests: user.friendRequests,
+    })
+  } catch (error) {
+    res.status(500).send({ error: `An error occurred ${error.message}` })
+    console.error('Error encountered:', error)
+  }
+})
+
+///////////////// Post List Endpoint //////////////////////
+// app.post('/api/user/:id/list', authenticateJWT, async (req, res) => {
+//   try {
+//     const userId = req.params.id
+//     const user = await client
+//       .db('cavanaughDB')
+//       .collection('users')
+//       .findOne({ _id: new ObjectId(userId) })
+//     if (!user) {
+//       return res.status(404).send({ error: 'User not found' })
+//     }
+//     res.send({ username: user.username, photoUrl: user.userList })
+//   } catch (error) {
+//     res.status(500).send({ error: `An error occurred ${error.message}` })
+//     console.error('Error encountered:', error)
+//   }
+// })
 app.listen(port, () => {
   console.log(`Server started on http://localhost:${port}`)
 })

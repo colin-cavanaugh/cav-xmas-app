@@ -9,10 +9,14 @@ import Header from './components/Header/Header'
 import Login from './components/Login/Login'
 import Home from './components/Home/Home'
 import Profile from './components/Profile/Profile'
+import Events from './components/Events/Events.js'
+import AddFriends from './components/Friends/AddFriends.js'
 
 type RootStackParamList = {
   Home: undefined
   Profile: undefined
+  AddFriends: undefined
+  Events: undefined
   Details: { itemId: number }
   Login: undefined
 }
@@ -28,6 +32,7 @@ const DetailsScreen: React.FC = () => {
 const Stack = createStackNavigator<RootStackParamList>()
 
 function App() {
+  console.log('App component initialized')
   const [menuOpen, setMenuOpen] = useState(false)
   // const [isLoggedIn, setIsLoggedIn] = useState(false)
 
@@ -58,6 +63,8 @@ function App() {
         >
           <Stack.Screen name='Home' component={Home} />
           <Stack.Screen name='Profile' component={Profile} />
+          <Stack.Screen name='AddFriends' component={AddFriends} />
+          <Stack.Screen name='Events' component={Events} />
           <Stack.Screen name='Details' component={DetailsScreen} />
         </Stack.Navigator>
       ) : (

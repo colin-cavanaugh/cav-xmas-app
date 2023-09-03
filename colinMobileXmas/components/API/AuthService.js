@@ -12,7 +12,30 @@ export const useUser = () => {
 }
 
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
+  console.log('UserProvider Initialized')
+  const initialState = {
+    userId: null,
+    username: null,
+    sentRequests: [],
+    friendRequests: [],
+  }
+  const [user, setUser] = useState(initialState)
+
+  const login = async token => {
+    await AsyncStorage.setItem('userToken', token)
+    const decodedToken = jwtDecode(token)
+
+    // Set userId from decodedToken
+    if (decodedToken.userId) {
+      setUser({
+        userId: decodedToken.userId,
+        username: null,
+        sentRequests: [],
+        friendRequests: [],
+      })
+      await fetchUserProfile(decodedToken.userId) // Make sure to await it
+    }
+  }
 
   const fetchUserProfile = async userId => {
     try {
@@ -31,24 +54,14 @@ export const UserProvider = ({ children }) => {
         }
       )
       const userProfile = response.data
+      // Merge userProfile into current user state
       setUser(prevState => ({
         ...prevState,
-        photoUrl: userProfile.photoUrl, // Add the photoUrl to the user state
+        ...userProfile,
       }))
     } catch (error) {
       console.error('Error fetching user profile:', error)
     }
-  }
-
-  const login = async token => {
-    await AsyncStorage.setItem('userToken', token)
-    const decodedToken = jwtDecode(token)
-    console.log('Decoded Token: ', decodedToken)
-    setUser(decodedToken)
-    if (decodedToken.userId) {
-      await fetchUserProfile(decodedToken.userId) // Fetch the user profile when logging in
-    }
-    console.log('Login Function Called (After setUser(decodedToken))')
   }
 
   const logout = async () => {

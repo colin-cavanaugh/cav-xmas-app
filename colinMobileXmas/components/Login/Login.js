@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useNavigation } from '@react-navigation/native'
 import { useUser } from '../API/AuthService.js'
 import Snowflake from '../Snowflake/Snowflake.tsx'
+// import { BACKEND_URL } from '@env'
 
 const Login = props => {
   const { setLoggedIn } = props
@@ -28,7 +29,7 @@ const Login = props => {
       //   username,
       //   password,
       // })
-      const response = await axios.post('http://192.168.0.12:8000/api/login', {
+      const response = await axios.post(`http://192.168.0.12:8000/api/login`, {
         username,
         password,
       })
@@ -55,7 +56,7 @@ const Login = props => {
       //   password,
       // })
       const response = await axios.post(
-        'http://192.168.0.12:8000/api/register',
+        `http://192.168.0.12:8000/api/register`,
         {
           username,
           password,

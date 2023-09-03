@@ -20,6 +20,7 @@ export const UserProvider = ({ children }) => {
     friendRequests: [],
   }
   const [user, setUser] = useState(initialState)
+  const [loading, setLoading] = useState(true)
 
   const login = async token => {
     await AsyncStorage.setItem('userToken', token)

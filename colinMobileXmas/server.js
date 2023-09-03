@@ -356,6 +356,58 @@ app.post('/api/user/:id/acceptFriendRequest', async (req, res) => {
     res.status(500).send('An error occurred')
   }
 })
+// Fetching friends and pending requests
+app.get('/api/user/:id/friendsList', async (req, res) => {
+  const userId = req.params.id
+
+  try {
+    const user = await client
+      .db('cavanaughDB')
+      .collection('users')
+      .findOne(
+        { _id: new ObjectId(userId) },
+        { projection: { friends: 1, friendRequests: 1 } }
+      )
+
+    if (!user) {
+      res.status(404).send('User not found')
+      return
+    }
+    if (!user.friends || !user.friendRequests) {
+      // Log or handle this specific case
+      console.log('Friends or friendRequests field is undefined.')
+    }
+    const friendsList = user.friends
+      ? user.friends.map(friendId => new ObjectId(friendId))
+      : []
+    const pendingList = user.friendRequests
+      ? user.friendRequests.map(requestId => new ObjectId(requestId))
+      : []
+
+    const friends = await client
+      .db('cavanaughDB')
+      .collection('users')
+      .find({ _id: { $in: friendsList } })
+      .project({ username: 1 })
+      .toArray()
+
+    const pendingRequests = await client
+      .db('cavanaughDB')
+      .collection('users')
+      .find({ _id: { $in: pendingList } })
+      .project({ username: 1 })
+      .toArray()
+
+    res.status(200).json({
+      friends,
+      pendingRequests,
+    })
+  } catch (error) {
+    console.error('Detailed Error:', error)
+    res.status(500).send('An error occurred')
+  }
+})
+
 ///////////////// User Id Endpoint //////////////////////
 app.get('/api/user/:id', authenticateJWT, async (req, res) => {
   console.log('GET api/user/:id endpoint called')

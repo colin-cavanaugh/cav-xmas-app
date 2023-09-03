@@ -38,7 +38,6 @@ function App() {
 
   const { user, logout } = useUser()
   console.log('User State in App:', user)
-
   const toggleMenu = () => {
     setMenuOpen(!menuOpen)
   }

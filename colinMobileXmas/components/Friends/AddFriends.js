@@ -11,6 +11,7 @@ import {
 import { useUser } from '../API/AuthService.js'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import FriendsList from './FriendsList.js'
 // import { BACKEND_URL } from '@env'
 
 const AddFriends = () => {
@@ -109,33 +110,33 @@ const AddFriends = () => {
       setFoundUsers([])
     }
   }
-  // Fetch list of friends
-  const fetchFriends = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken')
-      const response = await axios.get(
-        `http://192.168.0.12:8000/api/user/${userId}/friends`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      if (response.status === 200) {
-        setFriends(response.data) // Assume the response data is the array of friends
-      }
-    } catch (error) {
-      console.error('Error fetching friends:', error)
-    }
-  }
+  // // Fetch list of friends
+  // const fetchFriends = async () => {
+  //   try {
+  //     const token = await AsyncStorage.getItem('userToken')
+  //     const response = await axios.get(
+  //       `http://192.168.0.12:8000/api/user/${userId}/friends`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     )
+  //     if (response.status === 200) {
+  //       setFriends(response.data) // Assume the response data is the array of friends
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching friends:', error)
+  //   }
+  // }
 
   // On component mount, fetch sent friend requests and friends
   useEffect(() => {
     fetchSentRequests()
   }, [userId])
-  useEffect(() => {
-    fetchFriends() // fetch friends list
-  }, [userId])
+  // useEffect(() => {
+  //   fetchFriends() // fetch friends list
+  // }, [userId])
   // Render a single user item
   const renderUserItem = ({ item: { _id, username } }) => (
     <TouchableOpacity
@@ -158,6 +159,7 @@ const AddFriends = () => {
   return (
     <View>
       <Text>Add Friends Component</Text>
+      <FriendsList />
       <View>
         <TextInput
           value={searchUsername}
@@ -167,6 +169,8 @@ const AddFriends = () => {
         />
         <Button title='Search' onPress={findFriend} />
       </View>
+      {console.log('FoundUsers: ', foundUsers)}
+      {console.log('Friends: ', friends)}
       <FlatList
         data={foundUsers}
         renderItem={renderUserItem}

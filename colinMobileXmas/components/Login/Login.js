@@ -23,12 +23,20 @@ const Login = props => {
   const [password, setPassword] = useState('')
   const navigation = useNavigation()
 
+  // Validate username and password
+  function validateUsername(username) {
+    const usernameRegex = /^[a-zA-Z0-9_\-.$#@]+[0-9]+[a-zA-Z0-9_\-.$#@]*$/
+    return usernameRegex.test(username)
+  }
+
+  // Validate password upon registration
+  function validatePassword(password) {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!$#%-])[a-zA-Z0-9!$#%-]{8,}$/
+    return passwordRegex.test(password)
+  }
+
   const handleLogin = async () => {
     try {
-      // const response = await axios.post('http://localhost:8000/api/login', {
-      //   username,
-      //   password,
-      // })
       const response = await axios.post(`http://192.168.0.12:8000/api/login`, {
         username,
         password,
@@ -40,6 +48,7 @@ const Login = props => {
         message.toLowerCase() === 'login successful'
       ) {
         const { token } = response.data.data
+
         await AsyncStorage.setItem('userToken', token)
         login(token)
       } else {
@@ -50,11 +59,23 @@ const Login = props => {
     }
   }
   const handleRegister = async () => {
+    if (!validateUsername(username)) {
+      ToastAndroid.showWithGravity(
+        'Username must include at least one number.',
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER
+      )
+      return
+    }
+    if (!validatePassword(password)) {
+      ToastAndroid.showWithGravity(
+        'Weak password. Min 8 chars, use upper/lowercase, numbers, and [!$#%-].',
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER
+      )
+      return
+    }
     try {
-      // const response = await axios.post('http://localhost:8000/api/register', {
-      //   username,
-      //   password,
-      // })
       const response = await axios.post(
         `http://192.168.0.12:8000/api/register`,
         {

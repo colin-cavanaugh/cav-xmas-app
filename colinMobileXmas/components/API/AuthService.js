@@ -12,40 +12,33 @@ export const useUser = () => {
 }
 
 export const UserProvider = ({ children }) => {
-  console.log('UserProvider Initialized')
+  console.log('UserProvider Initialized AuthService Component')
+
   const initialState = {
     userId: null,
     username: null,
     sentRequests: [],
     friendRequests: [],
   }
+
   const [user, setUser] = useState(initialState)
-  const [loading, setLoading] = useState(true)
 
   const login = async token => {
-    await AsyncStorage.setItem('userToken', token)
-    const decodedToken = jwtDecode(token)
-
-    // Set userId from decodedToken
-    if (decodedToken.userId) {
-      setUser({
-        userId: decodedToken.userId,
-        username: null,
-        sentRequests: [],
-        friendRequests: [],
-      })
-      await fetchUserProfile(decodedToken.userId) // Make sure to await it
+    try {
+      const decodedToken = jwtDecode(token)
+      console.log('decodedToken contains userId: ', 'userId' in decodedToken)
+      const { userId } = decodedToken
+      console.log('decodedToken: ', decodedToken)
+      await AsyncStorage.setItem('userToken', token)
+      await fetchUserProfile(userId)
+    } catch (error) {
+      console.error('Error during login:', error)
     }
   }
 
   const fetchUserProfile = async userId => {
     try {
-      const token = await AsyncStorage.getItem('userToken') // Fetch the token from AsyncStorage
-
-      if (!token) {
-        console.error("Token doesn't exist")
-        return // Exit the function if there's no token
-      }
+      const token = await AsyncStorage.getItem('userToken')
       const response = await axios.get(
         `http://192.168.0.12:8000/api/user/${userId}`,
         {
@@ -55,11 +48,12 @@ export const UserProvider = ({ children }) => {
         }
       )
       const userProfile = response.data
-      // Merge userProfile into current user state
+      console.log('Fetched User Profile:', userProfile)
       setUser(prevState => ({
         ...prevState,
         ...userProfile,
       }))
+      console.log('userProfile AuthService Component: ', userProfile)
     } catch (error) {
       console.error('Error fetching user profile:', error)
     }
@@ -72,23 +66,28 @@ export const UserProvider = ({ children }) => {
       ToastAndroid.CENTER
     )
     await AsyncStorage.removeItem('userToken')
-    setUser(null)
+    setUser(null) // Set user to null upon logout
   }
 
   useEffect(() => {
     const getTokenAndDecode = async () => {
-      console.log('useEffect getTokenAndDecode')
       const token = await AsyncStorage.getItem('userToken')
       if (token) {
         const decodedToken = jwtDecode(token)
+        console.log(
+          'decodedToken in useEffect contains userId: ',
+          'userId' in decodedToken
+        )
         const currentTime = new Date().getTime() / 1000
         if (decodedToken.exp < currentTime) {
           await AsyncStorage.removeItem('userToken')
-          setUser(null)
+          setUser(null) // Set to null if the token is expired
         } else {
-          setUser(decodedToken)
-          await fetchUserProfile(decodedToken.userId) // fetch user profile also in useEffect
+          setUser(decodedToken) // or set to user info
+          await fetchUserProfile(decodedToken.userId)
         }
+      } else {
+        setUser(null) // Set to null if the token doesn't exist
       }
     }
 

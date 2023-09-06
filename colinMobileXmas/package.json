@@ -35,7 +35,8 @@
     "react-native-image-picker": "^5.6.1",
     "react-native-reanimated": "^3.4.2",
     "react-native-safe-area-context": "^4.7.1",
-    "react-native-screens": "^3.24.0"
+    "react-native-screens": "^3.24.0",
+    "react-native-vector-icons": "^10.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
@@ -46,6 +47,7 @@
     "@tsconfig/react-native": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/react": "^18.0.24",
+    "@types/react-native-vector-icons": "^6.4.14",
     "@types/react-test-renderer": "^18.0.0",
     "babel-jest": "^29.2.1",
     "eslint": "^8.19.0",

@@ -4,6 +4,7 @@ import jwtDecode from 'jwt-decode'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ToastAndroid } from 'react-native'
 import axios from 'axios'
+import { socket } from '../Socket/useSocket.js'
 
 const UserContext = createContext()
 const USER_TOKEN_KEY = 'userToken' // To ensure consistent use of AsyncStorage key.
@@ -47,6 +48,7 @@ export const UserProvider = ({ children }) => {
         'User Object after Login and setUser({ ...userProfile, userId })',
         user
       )
+      socket.emit('go-online', userId) // Notify server user is online
     } catch (error) {
       console.error('Error during login:', error)
     }
@@ -79,6 +81,7 @@ export const UserProvider = ({ children }) => {
     await AsyncStorage.removeItem(USER_ID_KEY) // Remove userId
     setUserChangeSource('Logout function')
     setUser(null)
+    socket.emit('go-offline', user?.userId) // Notify server user is offline
   }
 
   useEffect(() => {

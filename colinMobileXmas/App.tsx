@@ -30,7 +30,9 @@ import Events from './components/Events/Events.js'
 import AddFriends from './components/Friends/AddFriends.js'
 import SocialDrawer from './components/Social/SocialDrawer.js'
 import ChatDrawer from './components/Social/ChatDrawer.js'
+import BottomTabNavigator from './components/Social/BottomTabNavigator.js'
 import { useFriends } from './components/Friends/UseFriends.js'
+import useSocket from './components/Socket/useSocket.js'
 
 type RootStackParamList = {
   Home: undefined
@@ -113,7 +115,16 @@ function App() {
     username: string
     isOnline?: boolean // Assuming isOnline is optional
   }
+  type SocialDrawerProps = {
+    friends: Friend[]
+    openChat: (friend: Friend) => void
+  }
+  const SocialDrawerWrapper = () => {
+    // You can fetch friends or any required data here
+    // You can also define any required handlers here
 
+    return <SocialDrawer friends={someFriendsArray} openChat={someHandler} />
+  }
   const openChat = (friend: Friend) => {
     Alert.alert('Chat Opened', `Now chatting with ${friend.username}`)
     setCurrentChatFriend(friend)
@@ -140,6 +151,8 @@ function App() {
               <Drawer.Screen name='Profile' component={Profile} />
               <Drawer.Screen name='AddFriends' component={AddFriends} />
               <Drawer.Screen name='Events' component={Events} />
+              <Drawer.Screen name='Social' component={SocialDrawer} />
+              <Drawer.Screen name='BottomTabs' component={BottomTabNavigator} />
             </Drawer.Navigator>
             {/* Button to toggle SocialDrawer */}
             <TouchableOpacity

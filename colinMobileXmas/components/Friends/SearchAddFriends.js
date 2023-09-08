@@ -9,26 +9,27 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { useUser } from '../API/AuthService.js'
-import axios from 'axios'
 import { useFriends } from './UseFriends'
+import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import FriendsList from './FriendsList.js'
 
-const AddFriends = () => {
+const SearchAddFriends = () => {
   const { user } = useUser()
   const userId = user?.userId
   const {
     friends,
     pendingSentRequests,
     sendFriendRequest: sendRequest,
+    pendingReceivedRequests,
+    acceptFriendRequest,
   } = useFriends(userId)
+
   const [searchUsername, setSearchUsername] = useState('')
   const [foundUsers, setFoundUsers] = useState([])
 
   const findFriend = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken')
-
       if (!token) {
         console.error("Token doesn't exist")
         return
@@ -42,6 +43,7 @@ const AddFriends = () => {
           },
         }
       )
+
       if (response.data && response.data.length > 0) {
         setFoundUsers(response.data)
       } else {
@@ -58,9 +60,9 @@ const AddFriends = () => {
   }
 
   const friendStatus = userId => {
-    if (friends.includes(userId)) {
+    if (friends.some(friend => friend._id === userId)) {
       return null
-    } else if (pendingSentRequests.includes(userId)) {
+    } else if (pendingSentRequests.some(request => request._id === userId)) {
       return <Text>Request Sent</Text>
     } else {
       return <Button title='Add' onPress={() => sendRequest(userId)} />
@@ -79,25 +81,48 @@ const AddFriends = () => {
   )
 
   return (
-    <View>
-      <Text>Add Friends Component</Text>
-      <FriendsList />
-      <View>
-        <TextInput
-          value={searchUsername}
-          onChangeText={setSearchUsername}
-          placeholder='Find User'
-          onSubmitEditing={findFriend}
-        />
-        <Button title='Search' onPress={findFriend} />
-      </View>
+    <View style={{ padding: 20 }}>
+      <Text>Search and Add Friends</Text>
+
+      {/* Search Friends */}
+      <TextInput
+        value={searchUsername}
+        onChangeText={setSearchUsername}
+        placeholder='Find User'
+        onSubmitEditing={findFriend}
+      />
+      <Button title='Search' onPress={findFriend} />
+
+      {/* Found Users */}
       <FlatList
         data={foundUsers}
         renderItem={renderUserItem}
         keyExtractor={item => item._id}
       />
+
+      {/* Display current friends */}
+      <FlatList
+        data={friends}
+        keyExtractor={item => item._id}
+        renderItem={({ item }) => <Text>{item.username}</Text>}
+      />
+
+      {/* Display received friend requests */}
+      <FlatList
+        data={pendingReceivedRequests}
+        keyExtractor={item => item._id}
+        renderItem={({ item }) => (
+          <View>
+            <Text>{item.username} sent you a friend request.</Text>
+            <Button
+              title='Accept'
+              onPress={() => acceptFriendRequest(item._id, item.username)}
+            />
+          </View>
+        )}
+      />
     </View>
   )
 }
 
-export default AddFriends
+export default SearchAddFriends

@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
-import { View, Text, TouchableOpacity, FlatList } from 'react-native'
+// SocialDrawer.tsx
+import React from 'react'
+import { View, Text, FlatList, TouchableOpacity } from 'react-native'
+import BottomTabNavigator from './BottomTabNavigator'
 
 const SocialDrawer = ({ friends, openChat }) => {
-  // Debugging line
-  console.log('Friends Array: ', friends)
   return (
     <View
       style={{
@@ -17,27 +17,60 @@ const SocialDrawer = ({ friends, openChat }) => {
         borderTopRightRadius: 10,
       }}
     >
-      <Text
+      <View
         style={{
-          fontWeight: 'bold',
-          fontSize: 16,
-          marginBottom: 10,
-          color: 'black',
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          width: 250,
+          backgroundColor: 'white',
+          padding: 10,
+          borderTopLeftRadius: 10,
+          borderTopRightRadius: 10,
         }}
       >
-        Online Friends
-      </Text>
-      <FlatList
-        data={friends}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => openChat(item)}>
-            <Text style={{ fontSize: 14, marginBottom: 5 }}>
-              {item.username} - {item.isOnline ? 'Online' : 'Offline'}
-            </Text>
-          </TouchableOpacity>
-        )}
-        keyExtractor={item => item._id}
-      />
+        <Text
+          style={{
+            fontWeight: 'bold',
+            fontSize: 16,
+            marginBottom: 10,
+            color: 'black',
+          }}
+        >
+          Online Friends
+        </Text>
+        <FlatList
+          data={friends}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => openChat(item)}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 5,
+                }}
+              >
+                <View
+                  style={{
+                    height: 10,
+                    width: 10,
+                    borderRadius: 5,
+                    backgroundColor: item.isOnline ? 'green' : 'grey',
+                    marginRight: 5,
+                  }}
+                />
+                <Text style={{ fontSize: 14 }}>
+                  {item.username} - {item.isOnline ? 'Online' : 'Offline'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          keyExtractor={item => item._id}
+        />
+      </View>
+
+      {/* Add the BottomTabNavigator */}
+      {/* <BottomTabNavigator /> */}
     </View>
   )
 }

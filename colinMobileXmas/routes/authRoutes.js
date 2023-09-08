@@ -12,10 +12,18 @@ module.exports = function (client) {
     console.log('POST api/register endpoint called')
     const { username, password } = req.body
 
-    // Hash the password
+    const existingUser = await client
+      .db('cavanaughDB')
+      .collection('users')
+      .findOne({ username })
+
+    if (existingUser) {
+      return sendResponse(res, 'error', null, 'Username is already taken')
+    }
+
+    // Hash the password after checking for existing user
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Store user in the database
     try {
       await client
         .db('cavanaughDB')

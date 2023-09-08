@@ -60,8 +60,6 @@ const AddFriends = () => {
         Alert.alert('Success', 'Friend request sent')
       }
       // Update the local user state to reflect the new friend.
-      // This assumes that the response object contains the updated user data.
-      // Adjust according to your back-end response.
       if (response.data && response.data.updatedUser) {
         setUser(response.data.updatedUser)
       }

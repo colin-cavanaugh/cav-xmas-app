@@ -3,7 +3,7 @@ dotenv.config()
 
 const express = require('express')
 const cors = require('cors')
-const { MongoClient } = require('mongodb')
+const { MongoClient, ObjectId } = require('mongodb')
 const http = require('http')
 const socketIo = require('socket.io')
 const onlineUsers = {}
@@ -27,6 +27,7 @@ io.on('connection', socket => {
   socket.on('go-online', userId => {
     console.log('User with id:', userId, 'went online.')
     onlineUsers[socket.id] = userId
+    markUserOnline(userId)
   })
 
   socket.on('disconnect', () => {
@@ -45,6 +46,19 @@ io.on('connection', socket => {
 })
 
 // Setting users online or offline
+async function markUserOnline(userId) {
+  try {
+    const db = client.db('cavanaughDB')
+    const userCollection = db.collection('users')
+    await userCollection.updateOne(
+      { _id: new ObjectId(userId) }, // Convert string to ObjectId
+      { $set: { isOnline: true } }
+    )
+    console.log(`User ${userId} marked online`)
+  } catch (error) {
+    console.error('Error marking user online', error)
+  }
+}
 async function markUserOffline(userId) {
   try {
     const db = client.db('cavanaughDB')

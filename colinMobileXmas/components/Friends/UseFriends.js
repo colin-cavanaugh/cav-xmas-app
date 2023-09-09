@@ -72,11 +72,36 @@ export const useFriends = userId => {
       Alert.alert('Error', 'Failed to accept friend request.')
     }
   }
+  const sendFriendRequest = async friendId => {
+    const token = await AsyncStorage.getItem('userToken')
+    try {
+      const response = await axios.post(
+        `http://192.168.0.12:8000/api/user/${userId}/sendFriendRequest`,
+        { friendId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (response.status === 200) {
+        console.log(response.data) // If your server returns a message, it will be logged here
+        // Update pendingSentRequests to include the new friendId
+        setPendingSentRequests(prevRequests => [...prevRequests, friendId])
+      } else {
+        console.error(response.data) // Error message, if provided by the server, will be logged here
+      }
+    } catch (error) {
+      console.error('Failed to send friend request:', error)
+    }
+  }
 
   return {
     friends,
     pendingSentRequests,
     pendingReceivedRequests,
     acceptFriendRequest,
+    sendFriendRequest,
   }
 }

@@ -3,7 +3,8 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const { sendResponse } = require('./utils') // Assuming utils.js is one level up
 
-const SECRET_KEY = process.env.SECRET_KEY
+const ACCESS_SECRET = process.env.ACCESS_SECRET
+const REFRESH_SECRET = process.env.REFRESH_SECRET
 
 module.exports = function (client) {
   const router = express.Router()
@@ -57,9 +58,21 @@ module.exports = function (client) {
 
       const isMatch = await bcrypt.compare(password, user.password)
       if (isMatch) {
-        const token = jwt.sign({ userId: user._id.toString() }, SECRET_KEY, {
+        const token = jwt.sign({ userId: user._id.toString() }, ACCESS_SECRET, {
           expiresIn: '1h',
         })
+
+        const refreshToken = jwt.sign(
+          { userId: user._id.toString() },
+          REFRESH_SECRET,
+          {
+            expiresIn: '7d',
+          }
+        )
+        await client
+          .db('cavanaughDB')
+          .collection('refreshTokens')
+          .insertOne({ token: refreshToken })
         return sendResponse(res, 'success', { token }, 'Login Successful')
       }
       if (!isMatch) {
@@ -73,6 +86,32 @@ module.exports = function (client) {
         `Error processing data: ${error.message}`
       )
     }
+  })
+  router.post('/api/token', async (req, res) => {
+    const refreshToken = req.body.token
+
+    if (!refreshToken) {
+      return sendResponse(res, 'error', null, 'No token provided')
+    }
+
+    const existingToken = await client
+      .db('cavanaughDB')
+      .collection('refreshTokens')
+      .findOne({ token: refreshToken })
+
+    if (!existingToken) {
+      return sendResponse(res, 'error', null, 'Invalid refresh token')
+    }
+
+    jwt.verify(refreshToken, REFRESH_SECRET, (err, user) => {
+      if (err)
+        return sendResponse(res, 'error', null, 'Token verification failed')
+
+      const accessToken = jwt.sign({ userId: user.userId }, ACCESS_SECRET, {
+        expiresIn: '1h',
+      })
+      return sendResponse(res, 'success', { accessToken }, 'Token refreshed')
+    })
   })
 
   return router

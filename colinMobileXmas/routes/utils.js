@@ -1,4 +1,4 @@
-const SECRET_KEY = process.env.SECRET_KEY
+const ACCESS_SECRET = process.env.ACCESS_SECRET
 const jwt = require('jsonwebtoken')
 
 const sendResponse = (res, status, data, message) => {
@@ -14,7 +14,7 @@ const authenticateJWT = (req, res, next) => {
 
   if (authHeader) {
     const token = authHeader.split(' ')[1]
-    jwt.verify(token, SECRET_KEY, (err, user) => {
+    jwt.verify(token, ACCESS_SECRET, (err, user) => {
       if (err) {
         console.error('Token verification failed:', err)
         return sendResponse(res, 'error', null, 'Token not valid')

@@ -1,7 +1,6 @@
 // SocialDrawer.tsx
 import React from 'react'
 import { View, Text, FlatList, TouchableOpacity } from 'react-native'
-import BottomTabNavigator from './BottomTabNavigator'
 
 const SocialDrawer = ({ friends, openChat }) => {
   return (
@@ -68,9 +67,6 @@ const SocialDrawer = ({ friends, openChat }) => {
           keyExtractor={item => item._id}
         />
       </View>
-
-      {/* Add the BottomTabNavigator */}
-      {/* <BottomTabNavigator /> */}
     </View>
   )
 }

@@ -1,6 +1,6 @@
 import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import OnlineOfflineFriends from '../Friends/OnlineOfflineFriends'
+import OnlineOfflineFriends from '../Friends/OnlineOffline'
 import PendingRequests from '../Friends/PendingRequests'
 import SearchAddFriends from '../Friends/SearchAddFriends'
 

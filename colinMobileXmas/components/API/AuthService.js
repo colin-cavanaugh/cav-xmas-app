@@ -8,7 +8,44 @@ import { socket } from '../Socket/useSocket.js'
 
 const UserContext = createContext()
 const USER_TOKEN_KEY = 'userToken' // To ensure consistent use of AsyncStorage key.
+const REFRESH_TOKEN_KEY = 'refreshTokenKey'
 const USER_ID_KEY = 'userId'
+const refreshToken = async () => {
+  console.log('refreshToken function called ', refreshToken)
+  try {
+    const refreshTokenFromStorage = await AsyncStorage.getItem(
+      REFRESH_TOKEN_KEY
+    )
+    console.log('Stored refreshToken:', refreshTokenFromStorage)
+
+    const response = await axios.post('http://192.168.0.12:8000/api/token', {
+      refreshToken: refreshTokenFromStorage,
+    })
+    console.log('Response from /api/token:', response.data)
+    const newAccessToken = response.data.accessToken
+    await AsyncStorage.setItem(USER_TOKEN_KEY, newAccessToken)
+    return newAccessToken
+  } catch (error) {
+    console.error('Error refreshing token:', error.response.status)
+    throw error
+  }
+}
+async error => {
+  console.log('Interceptor triggered for error: ', error)
+  axios.interceptors.response.use(
+    response => response, // if response is successful, just return it
+    async error => {
+      const originalRequest = error.config
+      if (error.response.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true // mark the request as retried
+        const newToken = await refreshToken() // refresh the token
+        originalRequest.headers['Authorization'] = `Bearer ${newToken}` // set the new token on the request
+        return axios(originalRequest) // retry the request with the new token
+      }
+      return Promise.reject(error) // if the response is anything other than a 401, or if we've already retried, reject the promise
+    }
+  )
+}
 
 export const useUser = () => {
   return useContext(UserContext)
@@ -31,18 +68,21 @@ export const UserProvider = ({ children }) => {
       setUserChangeSource(null) // Reset after logging
     }
   }, [user])
-  const login = async token => {
+  const login = async (token, refreshToken) => {
     try {
       const decodedToken = jwtDecode(token)
       const { userId } = decodedToken
-
+      console.log('Decoded Token: ', decodedToken)
       await AsyncStorage.setItem(USER_TOKEN_KEY, token)
+      await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refreshToken) // Store the refreshToken
       await AsyncStorage.setItem(USER_ID_KEY, userId) // Store userId
 
       const userProfile = await fetchUserProfile(userId)
+      console.log('Fetched User Profile: ', userProfile)
       if (userProfile) {
         // Merging the userProfile data with the userId
         setUser({ ...userProfile, userId })
+        console.log('Updated User State: ', user)
       }
       console.log(
         'User Object after Login and setUser({ ...userProfile, userId })',
@@ -56,7 +96,13 @@ export const UserProvider = ({ children }) => {
 
   const fetchUserProfile = async userId => {
     try {
-      const token = await AsyncStorage.getItem(USER_TOKEN_KEY)
+      let token = await AsyncStorage.getItem(USER_TOKEN_KEY)
+      const decodedToken = jwtDecode(token)
+      const currentTime = new Date().getTime() / 1000
+      if (decodedToken.exp < currentTime) {
+        token = await refreshToken() // Refresh the token if it's expired
+      }
+
       const response = await axios.get(
         `http://192.168.0.12:8000/api/user/${userId}`,
         {
@@ -82,6 +128,7 @@ export const UserProvider = ({ children }) => {
     setUserChangeSource('Logout function')
     setUser(null)
     socket.emit('go-offline', user?.userId) // Notify server user is offline
+    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY) // also remove the refresh token
   }
 
   useEffect(() => {
@@ -108,7 +155,7 @@ export const UserProvider = ({ children }) => {
   }, [])
 
   return (
-    <UserContext.Provider value={{ user, login, logout }}>
+    <UserContext.Provider value={{ user, login, logout, setUser }}>
       {children}
     </UserContext.Provider>
   )

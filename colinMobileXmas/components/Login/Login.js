@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -22,7 +22,6 @@ const Login = props => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const navigation = useNavigation()
-
   // Validate username and password
   function validateUsername(username) {
     const usernameRegex = /^[a-zA-Z0-9_\-.$#@]+[0-9]+[a-zA-Z0-9_\-.$#@]*$/
@@ -41,23 +40,36 @@ const Login = props => {
         username,
         password,
       })
-      const { status, message } = response.data
 
-      if (
-        status === 'success' &&
-        message.toLowerCase() === 'login successful'
-      ) {
-        const { token } = response.data.data
+      if (response.data && response.data.status === 'success') {
+        const { accessToken, refreshToken } = response.data.data
 
-        await AsyncStorage.setItem('userToken', token)
-        login(token)
+        // Use the login function from the UserContext which should handle storage, etc.
+        login(accessToken, refreshToken) // We're now passing the refreshToken too.
+
+        ToastAndroid.showWithGravity(
+          'Successfully logged in!',
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER
+        )
       } else {
-        console.error('Login Failed:', message)
+        console.error('Login Failed:', response.data.message)
+        ToastAndroid.showWithGravity(
+          'Login Failed: ' + response.data.message,
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER
+        )
       }
     } catch (error) {
       console.error('Login Request Failed', error)
+      ToastAndroid.showWithGravity(
+        'Login Failed due to request error.',
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER
+      )
     }
   }
+
   const handleRegister = async () => {
     if (!validateUsername(username)) {
       ToastAndroid.showWithGravity(

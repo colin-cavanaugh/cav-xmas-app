@@ -1,6 +1,7 @@
 import { View, Text, Image, StyleSheet } from 'react-native'
 import { useState } from 'react'
-import Section from '../Section/Section'
+import EventsContainer from '../Events/EventsContainer'
+import EventsItem from '../Events/EventsItem'
 
 const Home = () => {
   //   const [isLoggedIn, setLoggedIn] = useState(false)
@@ -9,6 +10,8 @@ const Home = () => {
     <View style={styles.welcomeXmas}>
       <Text style={styles.welcome}>Welcome to your Home Page!</Text>
       <Text>Please navigate using the menu in the top right</Text>
+      <EventsContainer />
+      <EventsItem />
     </View>
   )
 }

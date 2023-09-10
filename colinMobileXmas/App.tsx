@@ -14,6 +14,7 @@ import {
   NavigationContainer,
   useNavigation,
   useRoute,
+  RouteProp,
   useNavigationState,
 } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
@@ -38,7 +39,7 @@ import Login from './components/Login/Login'
 import Home from './components/Home/Home'
 import Profile from './components/Profile/Profile'
 import Events from './components/Events/Events.js'
-import OnlineOfflineFriends from './components/Friends/OnlineOfflineFriends.js'
+import OnlineOffline from './components/Friends/OnlineOffline.js'
 import PendingRequests from './components/Friends/PendingRequests.js'
 import SearchAddFriends from './components/Friends/SearchAddFriends.js'
 // import AddFriends from './components/Friends/AddFriends.js'
@@ -65,6 +66,18 @@ type MainStackParamList = {
 }
 type FriendsButtonProps = {
   navigation: StackNavigationProp<MainStackParamList>
+}
+export type FriendsScreenParams = {
+  friends: any // or the appropriate type
+}
+
+export type FriendsTabParamList = {
+  Friends: {
+    friends: any // Replace 'any' with the appropriate type if available
+  }
+  Requests: undefined
+  Add: undefined
+  // Add other screens' params here if needed
 }
 const Stack = createStackNavigator<RootStackParamList>()
 const Drawer = createDrawerNavigator<RootStackParamList>()
@@ -116,7 +129,7 @@ function MainSideDrawer() {
   )
 }
 
-const FriendsTab = createBottomTabNavigator()
+const FriendsTab = createBottomTabNavigator<FriendsTabParamList>()
 
 function FriendsTabNavigator() {
   return (
@@ -129,7 +142,10 @@ function FriendsTabNavigator() {
     >
       <FriendsTab.Screen
         name='Friends'
-        component={OnlineOfflineFriends}
+        component={OnlineOffline}
+        initialParams={{
+          friends: [],
+        }}
         options={{
           tabBarIcon: ({ color, size }) => (
             <UserIcon
@@ -206,7 +222,7 @@ function FriendsButton() {
     <TouchableOpacity
       style={{
         position: 'absolute',
-        bottom: 100,
+        bottom: 675,
         right: 0,
         backgroundColor: 'white',
         paddingHorizontal: 20,
@@ -218,43 +234,34 @@ function FriendsButton() {
     </TouchableOpacity>
   )
 }
+
 const MainStack = createStackNavigator<MainStackParamList>()
 function App() {
   const { user, logout, loading } = useUser()
   const userId = user?.userId
   const { friends } = useFriends(userId) // Here we get the friends
 
-  const [isSocialDrawerOpen, setSocialDrawerOpen] = useState(false) // state for SocialDrawer
-  const [isChatDrawerOpen, setChatDrawerOpen] = useState(false)
-  const [currentChatFriend, setCurrentChatFriend] = useState<Friend | null>(
-    null
-  )
+  // const [isSocialDrawerOpen, setSocialDrawerOpen] = useState(false) // state for SocialDrawer
+
   // Define the Friend interface
   interface Friend {
     _id: string
     username: string
     isOnline?: boolean // Assuming isOnline is optional
   }
-  type SocialDrawerProps = {
-    friends: Friend[]
-    openChat: (friend: Friend) => void
-  }
+  // type SocialDrawerProps = {
+  //   friends: Friend[]
+  //   openChat: (friend: Friend) => void
+  // }
 
-  const toggleSocialDrawer = () => setSocialDrawerOpen(!isSocialDrawerOpen) // function to toggle SocialDrawer
-
-  const openChat = (friend: Friend) => {
-    Alert.alert('Chat Opened', `Now chatting with ${friend.username}`)
-    setCurrentChatFriend(friend)
-    setChatDrawerOpen(true)
-  }
+  // const toggleSocialDrawer = () => setSocialDrawerOpen(!isSocialDrawerOpen) // function to toggle SocialDrawer
 
   if (loading) {
     return <Text>Loading...</Text>
   }
-
   return (
     <NavigationContainer>
-      {user ? (
+      {user && user.userId ? (
         <>
           <MainStack.Navigator
             screenOptions={{ presentation: 'modal' }}
@@ -271,6 +278,7 @@ function App() {
               options={{
                 cardStyle: { backgroundColor: 'transparent' }, // This makes modal transparent
                 cardOverlayEnabled: true, // This renders a semi-transparent overlay below the modal
+                headerShown: false,
               }}
             />
           </MainStack.Navigator>
@@ -278,7 +286,7 @@ function App() {
 
           <FriendsButton />
 
-          {isChatDrawerOpen && currentChatFriend && (
+          {/* {isChatDrawerOpen && currentChatFriend && (
             <TouchableWithoutFeedback onPress={() => setChatDrawerOpen(false)}>
               <View
                 style={{
@@ -290,14 +298,14 @@ function App() {
                   bottom: 0,
                 }}
               >
-                <ChatDrawer friend={currentChatFriend} />
+              
               </View>
             </TouchableWithoutFeedback>
-          )}
+          )} */}
 
-          {isSocialDrawerOpen && (
+          {/* {isSocialDrawerOpen && (
             <SocialDrawer friends={friends} openChat={openChat} />
-          )}
+          )} */}
         </>
       ) : (
         <Stack.Navigator>

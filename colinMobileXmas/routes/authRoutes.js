@@ -73,7 +73,12 @@ module.exports = function (client) {
           .db('cavanaughDB')
           .collection('refreshTokens')
           .insertOne({ token: refreshToken })
-        return sendResponse(res, 'success', { token }, 'Login Successful')
+        return sendResponse(
+          res,
+          'success',
+          { accessToken: token, refreshToken },
+          'Login Successful'
+        )
       }
       if (!isMatch) {
         return sendResponse(res, 'error', null, 'Invalid password')
@@ -88,6 +93,7 @@ module.exports = function (client) {
     }
   })
   router.post('/api/token', async (req, res) => {
+    console.log('/api/token endpoint called with refreshToken:', req.body.token)
     const refreshToken = req.body.token
 
     if (!refreshToken) {
@@ -100,6 +106,7 @@ module.exports = function (client) {
       .findOne({ token: refreshToken })
 
     if (!existingToken) {
+      console.error('Refresh token not found in database:', refreshToken)
       return sendResponse(res, 'error', null, 'Invalid refresh token')
     }
 

@@ -9,6 +9,7 @@ import storage from '@react-native-firebase/storage'
 const Profile = () => {
   // const [userPhoto, setUserPhoto] = useState(null)
   const { user, setUser } = useUser()
+  console.log('From useUser:', user, setUser)
   const userId = user?.userId
 
   useEffect(() => {

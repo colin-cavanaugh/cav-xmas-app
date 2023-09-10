@@ -1,14 +1,16 @@
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 const jwt = require('jsonwebtoken')
 
-const sendResponse = (res, status, data, message) => {
+exports.sendResponse = (res, status, data, message) => {
   res.json({
     status,
     data,
     message,
   })
 }
-///////////////// Middleware Function //////////////////////
+
+const { sendResponse } = exports // Destructure it here
+
 const authenticateJWT = (req, res, next) => {
   const authHeader = req.headers.authorization
 
@@ -28,4 +30,5 @@ const authenticateJWT = (req, res, next) => {
     return sendResponse(res, 'error', null, 'Authorization header missing')
   }
 }
+
 module.exports = { sendResponse, authenticateJWT }

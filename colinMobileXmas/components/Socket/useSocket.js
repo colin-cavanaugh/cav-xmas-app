@@ -16,6 +16,13 @@ const useSocket = () => {
       socket.disconnect()
     }
   }, [user])
+  useEffect(() => {
+    socket.on('receive-message', addMessageToState)
+
+    return () => {
+      socket.off('receive-message')
+    }
+  }, [])
 
   return socket // Return socket instance in case any component wants to use it further
 }

@@ -101,11 +101,11 @@ const SearchAddFriends = () => {
       />
 
       {/* Display current friends */}
-      <FlatList
+      {/* <FlatList
         data={friends}
         keyExtractor={item => item._id}
         renderItem={({ item }) => <Text>{item.username}</Text>}
-      />
+      /> */}
 
       {/* Display received friend requests */}
       <FlatList

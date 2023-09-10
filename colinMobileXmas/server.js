@@ -43,6 +43,16 @@ io.on('connection', socket => {
     markUserOffline(userId)
     delete onlineUsers[socket.id]
   })
+  socket.on('new-message', data => {
+    const { sender, recipient, content } = data
+    // Forward this message to the recipient through their socket.
+    // Assume each user has a unique socket room by their userId.
+    socket.to(recipient).emit('receive-message', {
+      sender,
+      content,
+      timestamp: new Date(),
+    })
+  })
 })
 
 // Setting users online or offline
@@ -64,7 +74,7 @@ async function markUserOffline(userId) {
     const db = client.db('cavanaughDB')
     const userCollection = db.collection('users')
     await userCollection.updateOne(
-      { _id: userId },
+      { _id: new ObjectId(userId) },
       { $set: { isOnline: false } }
     )
     console.log(`User ${userId} marked offline`)

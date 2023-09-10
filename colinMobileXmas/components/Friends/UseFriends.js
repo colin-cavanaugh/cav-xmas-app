@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Alert } from 'react-native'
 import axios from 'axios'
 
 export const useFriends = userId => {

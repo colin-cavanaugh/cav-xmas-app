@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import {
   View,
   Text,
@@ -8,9 +8,13 @@ import {
   ScrollView,
   StyleSheet,
   Image,
+  ToastAndroid,
 } from 'react-native'
-import { socket } from '../Socket/useSocket'
+// import useSocket from '../Socket/useSocket'
 import { useUser } from '../API/AuthService'
+import { getChatId } from '../utility/utility'
+import DefaultIcon from 'react-native-vector-icons/Ionicons'
+import SocketContext from '../API/SocketContext'
 
 {
   /* Keep this ChatBubble component for possible group messages later, it will display the user photo in line with the text so its easier to see who sent it*/
@@ -38,35 +42,65 @@ const ChatDrawer = ({
   console.log('Render ChatDrawer Component')
   console.log('Chat Messages', chatMessages)
   const [message, setMessage] = useState('')
-  const currentMessages = chatMessages[friend._id] || []
   // const [chatMessages, setChatMessages] = useState([])
   const { user } = useUser()
   const userId = user?.userId
-  // Sending a message
+  const chatId = getChatId(userId, friend._id)
+  const currentMessages = chatMessages[chatId] || []
+
+  // const socket = useSocket(addMessageToState)
+  const socket = useContext(SocketContext)
+
   const sendMessage = () => {
     const newMessage = {
       sender: userId,
       recipient: friend._id,
       content: message,
     }
-    console.log(`Sending message: ${message} to ${friend.username}`)
-    socket.emit('new-message', newMessage)
+
+    // Check if the recipient is online before sending the message
+    if (friend.isOnline) {
+      console.log(`Sending message: ${message} to ${friend.username}`)
+      if (socket) {
+        socket.emit('new-message', newMessage)
+      }
+    } else {
+      // Handle the case where the recipient is offline (e.g., display a notification).
+      console.log(`Recipient ${friend.username} is offline. Message not sent.`)
+      // You can implement logic to store the message and send it later when the recipient is online.
+      // addMessageToQueue(newMessage); // Example: Store the message in a queue.
+    }
+
     addMessageToState(newMessage) // Use the function to organize the message
     setMessage('') // Resetting the input after sending.
   }
 
   // Receiving a message
   useEffect(() => {
-    socket.on('receive-message', message => {
-      // Handle the incoming message.
-      addMessageToState(message) // Use the function to organize the message
-    })
+    if (socket) {
+      socket.on('receive-message', message => {
+        console.log('Received message:', message)
+        // Handle the incoming message.
+        addMessageToState(message) // Use the function to organize the message
+        // TODO: Add notification or pop up the chat window here
+        ToastAndroid.showWithGravity(
+          `New message from ${message.sender}`,
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER
+        )
+      })
 
-    return () => {
-      socket.off('receive-message')
+      return () => {
+        socket.off('receive-message')
+      }
     }
-  }, [])
+  }, [socket])
 
+  useEffect(() => {
+    console.log('chatMessages changed:', chatMessages)
+  }, [chatMessages])
+
+  console.log('Current Messages:', currentMessages)
   return (
     <View style={styles.chatDrawerContainer}>
       <TouchableOpacity

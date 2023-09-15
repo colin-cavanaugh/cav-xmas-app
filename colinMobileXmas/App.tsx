@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import {
   View,
   Text,
@@ -47,8 +47,12 @@ import SocialDrawer from './components/Social/SocialDrawer.js'
 import ChatDrawer from './components/Social/ChatDrawer.js'
 // import BottomTabNavigator from './components/Social/BottomTabNavigator.js'
 import { useFriends } from './components/Friends/UseFriends.js'
-import useSocket from './components/Socket/useSocket.js'
+// import useSocket from './components/Socket/useSocket.js'
 import NavigateButton from './components/Navigation/NavigateButton.js'
+import SocketProvider from './components/API/SocketProvider.js'
+import SocketContext from './components/API/SocketContext.js'
+import io from 'socket.io-client'
+import { AppState, AppStateStatus } from 'react-native'
 
 type RootStackParamList = {
   Home: undefined
@@ -240,8 +244,40 @@ function App() {
   const { user, logout, loading } = useUser()
   const userId = user?.userId
   const { friends } = useFriends(userId) // Here we get the friends
+  const [appState, setAppState] = useState<AppStateStatus>(
+    AppState.currentState
+  )
+  const socket = useContext(SocketContext)
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (appState !== nextAppState) {
+        if (nextAppState === 'active') {
+          // Emit go-online when app comes to the foreground
+          if (socket && user?.userId) {
+            ;(socket as any).emit('go-online', user.userId)
+          }
+        } else if (nextAppState.match(/inactive|background/)) {
+          // Emit go-offline when app goes to the background
+          if (socket && user?.userId) {
+            ;(socket as any).emit('go-offline', user.userId)
+          }
+        }
+        // Update the app state
+        setAppState(nextAppState)
+      }
+    }
 
-  // const [isSocialDrawerOpen, setSocialDrawerOpen] = useState(false) // state for SocialDrawer
+    // Add the event listener and get a subscription object back
+    const subscription = AppState.addEventListener(
+      'change',
+      handleAppStateChange
+    )
+
+    return () => {
+      // Remove the event listener using the subscription object
+      subscription.remove()
+    }
+  }, [appState, socket, user?.userId])
 
   // Define the Friend interface
   interface Friend {
@@ -249,12 +285,6 @@ function App() {
     username: string
     isOnline?: boolean // Assuming isOnline is optional
   }
-  // type SocialDrawerProps = {
-  //   friends: Friend[]
-  //   openChat: (friend: Friend) => void
-  // }
-
-  // const toggleSocialDrawer = () => setSocialDrawerOpen(!isSocialDrawerOpen) // function to toggle SocialDrawer
 
   if (loading) {
     return <Text>Loading...</Text>
@@ -285,27 +315,6 @@ function App() {
           {/* <NavigateButton /> */}
 
           <FriendsButton />
-
-          {/* {isChatDrawerOpen && currentChatFriend && (
-            <TouchableWithoutFeedback onPress={() => setChatDrawerOpen(false)}>
-              <View
-                style={{
-                  flex: 1,
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: -75,
-                  bottom: 0,
-                }}
-              >
-              
-              </View>
-            </TouchableWithoutFeedback>
-          )} */}
-
-          {/* {isSocialDrawerOpen && (
-            <SocialDrawer friends={friends} openChat={openChat} />
-          )} */}
         </>
       ) : (
         <Stack.Navigator>

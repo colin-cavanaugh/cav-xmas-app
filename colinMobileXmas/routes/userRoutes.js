@@ -86,16 +86,18 @@ module.exports = function (client) {
         .collection('users')
         .findOne({ _id: new ObjectId(userId) })
 
-      console.log('Found user:', user) // Debug log
+      // console.log('Found user:', user) // Debug log
 
       if (!user) {
         return res.status(404).send({ error: 'User not found' })
       }
+      // console.log('User from user/:id endpoint: ', user)
       res.send({
         username: user.username,
         photoUrl: user.photoUrl,
         sentRequests: user.sentRequests,
         friendRequests: user.friendRequests,
+        isOnline: user.isOnline,
       })
     } catch (error) {
       res.status(500).send({ error: `An error occurred ${error.message}` })

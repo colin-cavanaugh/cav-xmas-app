@@ -55,6 +55,7 @@ const SearchAddFriends = () => {
       }
     } catch (error) {
       Alert.alert('Error', 'An error occurred while searching for the user.')
+      console.error(error)
       setFoundUsers([])
     }
   }

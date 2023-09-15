@@ -11,34 +11,34 @@ const ACCESS_SECRET = process.env.ACCESS_SECRET
 
 module.exports = function (client) {
   const router = express.Router()
-  ///////////////// Search Users Endpoint //////////////////////
-  router.get('/api/user/search', authenticateJWT, async (req, res) => {
-    console.log('GET api/user/search endpoint called')
-    try {
-      const username = req.query.username
-      console.log('Received username:', username)
-      if (!username) {
-        console.log('Missing username. Query parameters:', req.query)
-        return res
-          .status(400)
-          .send({ error: 'Username query parameter is required' })
-      }
-      const user = await client
-        .db('cavanaughDB')
-        .collection('users')
-        .findOne(
-          { username: new RegExp(`^${username}$`, 'i') },
-          { projection: { username: 1 } }
-        )
-      if (!user) {
-        return res.status(404).send({ error: 'User not found' })
-      }
-      res.send([user])
-    } catch (error) {
-      res.status(500).send({ error: `An error occurred ${error.message}` })
-      console.error('Error encountered:', error)
-    }
-  })
+  // ///////////////// Search Users Endpoint //////////////////////
+  // router.get('/api/user/search', authenticateJWT, async (req, res) => {
+  //   console.log('GET api/user/search endpoint called')
+  //   try {
+  //     const username = req.query.username
+  //     console.log('Received username:', username)
+  //     if (!username) {
+  //       console.log('Missing username. Query parameters:', req.query)
+  //       return res
+  //         .status(400)
+  //         .send({ error: 'Username query parameter is required' })
+  //     }
+  //     const user = await client
+  //       .db('cavanaughDB')
+  //       .collection('users')
+  //       .findOne(
+  //         { username: new RegExp(`^${username}$`, 'i') },
+  //         { projection: { username: 1 } }
+  //       )
+  //     if (!user) {
+  //       return res.status(404).send({ error: 'User not found' })
+  //     }
+  //     res.send([user])
+  //   } catch (error) {
+  //     res.status(500).send({ error: `An error occurred ${error.message}` })
+  //     console.error('Error encountered:', error)
+  //   }
+  // })
 
   ///////////////// Fetch All Friend Data Endpoint //////////////////////
   router.get(
@@ -60,7 +60,6 @@ module.exports = function (client) {
           res.status(404).send('User not found')
           return
         }
-
         const friendsList = user.friends
           ? user.friends.map(friendId => new ObjectId(friendId))
           : []
@@ -77,7 +76,7 @@ module.exports = function (client) {
           .db('cavanaughDB')
           .collection('users')
           .find({ _id: { $in: friendsList } })
-          .project({ username: 1, photoUrl: 1 })
+          .project({ username: 1, photoUrl: 1, isOnline: 1 })
           .toArray()
 
         const sentRequests = await client

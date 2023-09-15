@@ -90,6 +90,7 @@ export const useFriends = userId => {
         console.log(response.data) // If your server returns a message, it will be logged here
         // Update pendingSentRequests to include the new friendId
         setPendingSentRequests(prevRequests => [...prevRequests, friendId])
+        Alert.alert(`Friend request sent to ...`)
       } else {
         console.error(response.data) // Error message, if provided by the server, will be logged here
       }

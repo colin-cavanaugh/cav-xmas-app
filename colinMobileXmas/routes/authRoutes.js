@@ -1,6 +1,7 @@
 const express = require('express')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const { ObjectId } = require('mongodb')
 const { sendResponse } = require('./utils') // Assuming utils.js is one level up
 
 const ACCESS_SECRET = process.env.ACCESS_SECRET
@@ -46,6 +47,7 @@ module.exports = function (client) {
   router.post('/api/login', async (req, res) => {
     console.log('POST api/login endpoint called')
     const { username, password } = req.body
+
     try {
       const user = await client
         .db('cavanaughDB')
@@ -57,7 +59,14 @@ module.exports = function (client) {
       }
 
       const isMatch = await bcrypt.compare(password, user.password)
+
       if (isMatch) {
+        // Set user's isOnline status to true
+        await client
+          .db('cavanaughDB')
+          .collection('users')
+          .updateOne({ _id: user._id }, { $set: { isOnline: true } })
+
         const token = jwt.sign({ userId: user._id.toString() }, ACCESS_SECRET, {
           expiresIn: '1h',
         })
@@ -69,18 +78,19 @@ module.exports = function (client) {
             expiresIn: '7d',
           }
         )
+
         await client
           .db('cavanaughDB')
           .collection('refreshTokens')
           .insertOne({ token: refreshToken })
+
         return sendResponse(
           res,
           'success',
           { accessToken: token, refreshToken },
           'Login Successful'
         )
-      }
-      if (!isMatch) {
+      } else {
         return sendResponse(res, 'error', null, 'Invalid password')
       }
     } catch (error) {
@@ -92,6 +102,34 @@ module.exports = function (client) {
       )
     }
   })
+  router.post('/api/logout', async (req, res) => {
+    const token = req.headers.authorization.split(' ')[1]
+
+    if (!token) return sendResponse(res, 'error', null, 'No token provided')
+
+    jwt.verify(token, ACCESS_SECRET, async (err, user) => {
+      if (err)
+        return sendResponse(res, 'error', null, 'Token verification failed')
+
+      // Set user's isOnline to false
+      await client
+        .db('cavanaughDB')
+        .collection('users')
+        .updateOne(
+          { _id: new ObjectId(user.userId) },
+          { $set: { isOnline: false } }
+        )
+
+      // Remove refresh token (optional but recommended for security)
+      await client
+        .db('cavanaughDB')
+        .collection('refreshTokens')
+        .deleteOne({ token: req.body.refreshToken })
+
+      sendResponse(res, 'success', null, 'Logged out successfully')
+    })
+  })
+
   router.post('/api/token', async (req, res) => {
     console.log('/api/token endpoint called with refreshToken:', req.body.token)
     const refreshToken = req.body.token
@@ -110,13 +148,23 @@ module.exports = function (client) {
       return sendResponse(res, 'error', null, 'Invalid refresh token')
     }
 
-    jwt.verify(refreshToken, REFRESH_SECRET, (err, user) => {
+    jwt.verify(refreshToken, REFRESH_SECRET, async (err, user) => {
       if (err)
         return sendResponse(res, 'error', null, 'Token verification failed')
+
+      // Update user's online status
+      await client
+        .db('cavanaughDB')
+        .collection('users')
+        .updateOne(
+          { _id: new ObjectId(user.userId) },
+          { $set: { isOnline: true } }
+        )
 
       const accessToken = jwt.sign({ userId: user.userId }, ACCESS_SECRET, {
         expiresIn: '1h',
       })
+
       return sendResponse(res, 'success', { accessToken }, 'Token refreshed')
     })
   })

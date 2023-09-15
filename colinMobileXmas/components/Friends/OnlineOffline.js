@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback, useContext } from 'react'
 import {
   View,
   Text,
@@ -13,6 +13,9 @@ import { useUser } from '../API/AuthService.js'
 import { useFriends } from './UseFriends.js'
 import ChatDrawer from '../Social/ChatDrawer.js'
 import DefaultIcon from 'react-native-vector-icons/Ionicons'
+// import useSocket from '../Socket/useSocket.js'
+import { getChatId } from '../utility/utility.js'
+import SocketContext from '../API/SocketContext.js'
 
 const OnlineOfflineFriends = () => {
   const { user } = useUser()
@@ -23,7 +26,14 @@ const OnlineOfflineFriends = () => {
   const [currentChatFriend, setCurrentChatFriend] = useState(null)
   const [activeChats, setActiveChats] = useState([])
   const [chatMessages, setChatMessages] = useState({})
+  const [friendList, setFriendList] = useState([])
+  const socket = useContext(SocketContext)
 
+  useEffect(() => {
+    if (friends && friends.length > 0) {
+      setFriendList(friends)
+    }
+  }, [friends])
   const openChat = friend => {
     // Alert.alert('Chat Opened', `Now chatting with ${friend.username}`)
     ToastAndroid.showWithGravity(
@@ -40,18 +50,94 @@ const OnlineOfflineFriends = () => {
     }
 
     setCurrentChatFriend(friend)
+    console.log('Current Chat Friend: ', currentChatFriend)
     setChatDrawerOpen(true)
   }
   const closeChat = () => {
     setCurrentChatFriend(null)
     setChatDrawerOpen(false)
   }
-  const addMessageToState = message => {
-    setChatMessages(prev => ({
-      ...prev,
-      [message.recipient]: [...(prev[message.recipient] || []), message],
-    }))
+  const logInfo = (context, message) => {
+    console.info(`[INFO][${context}] ${message}`)
   }
+
+  const logError = (context, message) => {
+    console.error(`[ERROR][${context}] ${message}`)
+  }
+  const addMessageToState = useCallback(message => {
+    const context = 'addMessageToState'
+    logInfo(
+      context,
+      `Received message from ${message.sender} to ${message.recipient}`
+    )
+
+    // Update this line to use both sender and recipient from the message
+    const chatId = getChatId(message.sender, message.recipient)
+    logInfo(context, `Generated chatId: ${chatId}`)
+
+    setChatMessages(prev => {
+      logInfo(
+        context,
+        `Previous messages for chatId ${chatId}: ${JSON.stringify(
+          prev[chatId]
+        )}`
+      )
+
+      const newMessagesForChatId = [...(prev[chatId] || []), message]
+      logInfo(
+        context,
+        `New messages for chatId ${chatId}: ${JSON.stringify(
+          newMessagesForChatId
+        )}`
+      )
+      const newChatMessages = {
+        ...prev,
+        [chatId]: newMessagesForChatId,
+      }
+      logInfo(
+        context,
+        `Updated chatMessages state: ${JSON.stringify(newChatMessages)}`
+      )
+
+      return newChatMessages
+    })
+  }, [])
+
+  // const socket = useSocket(addMessageToState)
+  useEffect(() => {
+    if (!socket) return
+    if (socket) {
+      const handleUserOnline = userId => {
+        logInfo(context, `User online: ${userId}`)
+        const updatedFriends = friendList.map(friend =>
+          friend._id === userId ? { ...friend, isOnline: true } : friend
+        )
+        logInfo(
+          context,
+          `Updated Friends List after user came online: ${JSON.stringify(
+            updatedFriends
+          )}`
+        )
+        setFriendList(updatedFriends)
+      }
+
+      const handleUserOffline = userId => {
+        logInfo(context, `User offline: ${userId}`)
+        const updatedFriends = friendList.map(friend =>
+          friend._id === userId ? { ...friend, isOnline: false } : friend
+        )
+        setFriendList(updatedFriends)
+      }
+
+      socket.on('user-online', handleUserOnline)
+      socket.on('user-offline', handleUserOffline)
+
+      return () => {
+        socket.off('user-online', handleUserOnline)
+        socket.off('user-offline', handleUserOffline)
+      }
+    }
+  }, [socket, friends])
 
   const UserIcon = ({ friend, onClick }) => {
     return (
@@ -71,7 +157,7 @@ const OnlineOfflineFriends = () => {
       <View style={styles.friendsListContainer}>
         <Text>Your Friends</Text>
         <FlatList
-          data={friends}
+          data={friendList}
           keyExtractor={item => item._id}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => openChat(item)}>

@@ -4,93 +4,88 @@ import jwtDecode from 'jwt-decode'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ToastAndroid } from 'react-native'
 import axios from 'axios'
-import { socket } from '../Socket/useSocket.js'
 
 const UserContext = createContext()
-const USER_TOKEN_KEY = 'userToken' // To ensure consistent use of AsyncStorage key.
+const USER_TOKEN_KEY = 'userToken'
 const REFRESH_TOKEN_KEY = 'refreshTokenKey'
 const USER_ID_KEY = 'userId'
+
 const refreshToken = async () => {
-  console.log('refreshToken function called ', refreshToken)
   try {
     const refreshTokenFromStorage = await AsyncStorage.getItem(
       REFRESH_TOKEN_KEY
     )
-    console.log('Stored refreshToken:', refreshTokenFromStorage)
 
     const response = await axios.post('http://192.168.0.12:8000/api/token', {
       refreshToken: refreshTokenFromStorage,
     })
-    console.log('Response from /api/token:', response.data)
+
     const newAccessToken = response.data.accessToken
     await AsyncStorage.setItem(USER_TOKEN_KEY, newAccessToken)
     return newAccessToken
   } catch (error) {
-    console.error('Error refreshing token:', error.response.status)
+    console.error('Error refreshing token:', error)
     throw error
   }
 }
-async error => {
-  console.log('Interceptor triggered for error: ', error)
-  axios.interceptors.response.use(
-    response => response, // if response is successful, just return it
-    async error => {
-      const originalRequest = error.config
-      if (error.response.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true // mark the request as retried
-        const newToken = await refreshToken() // refresh the token
-        originalRequest.headers['Authorization'] = `Bearer ${newToken}` // set the new token on the request
-        return axios(originalRequest) // retry the request with the new token
-      }
-      return Promise.reject(error) // if the response is anything other than a 401, or if we've already retried, reject the promise
+
+axios.interceptors.response.use(
+  response => response,
+  async error => {
+    const originalRequest = error.config
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+      const newToken = await refreshToken()
+      originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+      return axios(originalRequest)
     }
-  )
-}
+    return Promise.reject(error)
+  }
+)
 
 export const useUser = () => {
   return useContext(UserContext)
 }
 
-export const UserProvider = ({ children }) => {
+export const UserProvider = ({ children, socket }) => {
   const initialUserState = {
     userId: null,
     username: null,
     sentRequests: [],
     friendRequests: [],
+    isOnline: false,
   }
 
   const [user, setUser] = useState(initialUserState)
-  const [userChangeSource, setUserChangeSource] = useState(null)
-  useEffect(() => {
-    console.log('User Object state change:', user)
-    if (userChangeSource) {
-      console.log('Change source:', userChangeSource)
-      setUserChangeSource(null) // Reset after logging
-    }
-  }, [user])
+
   const login = async (token, refreshToken) => {
     try {
       const decodedToken = jwtDecode(token)
       const { userId } = decodedToken
-      console.log('Decoded Token: ', decodedToken)
-      await AsyncStorage.setItem(USER_TOKEN_KEY, token)
-      await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refreshToken) // Store the refreshToken
-      await AsyncStorage.setItem(USER_ID_KEY, userId) // Store userId
+
+      await AsyncStorage.multiSet([
+        [USER_TOKEN_KEY, token],
+        [REFRESH_TOKEN_KEY, refreshToken],
+        [USER_ID_KEY, userId],
+      ])
 
       const userProfile = await fetchUserProfile(userId)
-      console.log('Fetched User Profile: ', userProfile)
       if (userProfile) {
-        // Merging the userProfile data with the userId
-        setUser({ ...userProfile, userId })
-        console.log('Updated User State: ', user)
+        setUser({ ...userProfile, userId, isOnline: true })
       }
-      console.log(
-        'User Object after Login and setUser({ ...userProfile, userId })',
-        user
-      )
-      socket.emit('go-online', userId) // Notify server user is online
+
+      if (socket && socket.connected) {
+        console.log('Socket is connected:', socket.connected)
+        socket.emit('go-online', userId)
+        console.log('Sent go-online event')
+      } else {
+        console.log('Socket is not connected')
+      }
     } catch (error) {
       console.error('Error during login:', error)
+      if (error.response) {
+        console.error('Error data:', error.response.data)
+      }
     }
   }
 
@@ -100,7 +95,7 @@ export const UserProvider = ({ children }) => {
       const decodedToken = jwtDecode(token)
       const currentTime = new Date().getTime() / 1000
       if (decodedToken.exp < currentTime) {
-        token = await refreshToken() // Refresh the token if it's expired
+        token = await refreshToken()
       }
 
       const response = await axios.get(
@@ -111,24 +106,61 @@ export const UserProvider = ({ children }) => {
           },
         }
       )
-      return response.data
+
+      const data = response.data
+      return {
+        ...data,
+        isOnline: data.isOnline || false,
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error)
     }
   }
 
   const logout = async () => {
-    ToastAndroid.showWithGravity(
-      'Successfully Logged out',
-      ToastAndroid.SHORT,
-      ToastAndroid.CENTER
-    )
-    await AsyncStorage.removeItem(USER_TOKEN_KEY)
-    await AsyncStorage.removeItem(USER_ID_KEY) // Remove userId
-    setUserChangeSource('Logout function')
-    setUser(null)
-    socket.emit('go-offline', user?.userId) // Notify server user is offline
-    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY) // also remove the refresh token
+    try {
+      const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY)
+      const refreshTokenFromStorage = await AsyncStorage.getItem(
+        REFRESH_TOKEN_KEY
+      )
+
+      const response = await axios.post(
+        'http://192.168.0.12:8000/api/logout',
+        {
+          refreshToken: refreshTokenFromStorage,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      )
+
+      if (response.data.status === 'success') {
+        ToastAndroid.showWithGravity(
+          'Successfully Logged out',
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER
+        )
+        await AsyncStorage.multiRemove([
+          USER_TOKEN_KEY,
+          USER_ID_KEY,
+          REFRESH_TOKEN_KEY,
+        ])
+        if (user && user.userId && socket) {
+          socket.emit('go-offline', user.userId)
+          socket.disconnect()
+        }
+        setUser(initialUserState)
+      } else {
+        console.error('Logout error:', response.data.message)
+      }
+    } catch (error) {
+      console.error('Error during logout:', error)
+      if (error.response) {
+        console.error('Error data:', error.response.data)
+      }
+    }
   }
 
   useEffect(() => {
@@ -141,7 +173,6 @@ export const UserProvider = ({ children }) => {
         if (decodedToken.exp >= currentTime) {
           const userProfile = await fetchUserProfile(decodedToken.userId)
           if (userProfile) {
-            // Merging the userProfile data with the userId
             newUserState = { ...userProfile, userId: decodedToken.userId }
           }
         } else {

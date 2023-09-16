@@ -47,7 +47,13 @@ const ChatDrawer = ({
   const userId = user?.userId
   const chatId = getChatId(userId, friend._id)
   const currentMessages = chatMessages[chatId] || []
-
+  if (!friend) {
+    return (
+      <View style={styles.noActiveChatContainer}>
+        <Text>No active chats</Text>
+      </View>
+    )
+  }
   // const socket = useSocket(addMessageToState)
   const socket = useContext(SocketContext)
 
@@ -74,15 +80,27 @@ const ChatDrawer = ({
     addMessageToState(newMessage) // Use the function to organize the message
     setMessage('') // Resetting the input after sending.
   }
+  const [notifications, setNotifications] = useState({})
 
+  // Function to handle received messages
+  function handleMessageReceived(message) {
+    if (message.sender !== friend._id) {
+      setNotifications(prev => ({
+        ...prev,
+        [message.sender]: (prev[message.sender] || 0) + 1,
+      }))
+    }
+  }
   // Receiving a message
   useEffect(() => {
     if (socket) {
       socket.on('receive-message', message => {
         console.log('Received message:', message)
-        // Handle the incoming message.
-        addMessageToState(message) // Use the function to organize the message
-        // TODO: Add notification or pop up the chat window here
+
+        // Handle the incoming message
+        addMessageToState(message)
+        handleMessageReceived(message)
+
         ToastAndroid.showWithGravity(
           `New message from ${message.sender}`,
           ToastAndroid.SHORT,
@@ -101,6 +119,7 @@ const ChatDrawer = ({
   }, [chatMessages])
 
   console.log('Current Messages:', currentMessages)
+
   return (
     <View style={styles.chatDrawerContainer}>
       <TouchableOpacity
@@ -119,6 +138,24 @@ const ChatDrawer = ({
           />
         ))}
       </ScrollView> */}
+      <ScrollView>
+        {activeChats.map(chatFriend => (
+          <TouchableOpacity
+            key={chatFriend._id}
+            onPress={() => {
+              setCurrentChatFriend(chatFriend)
+              handleChatOpened(chatFriend._id)
+            }}
+          >
+            {/* Your ChatBubble component here */}
+            {notifications[chatFriend._id] && (
+              <Text style={{ color: 'red' }}>
+                {notifications[chatFriend._id]}
+              </Text>
+            )}
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       <Text>Chat with {friend.username}</Text>
       <ScrollView>
@@ -163,14 +200,24 @@ const ChatDrawer = ({
 }
 
 const styles = StyleSheet.create({
+  // chatDrawerContainer: {
+  //   flex: 1,
+  //   flexDirection: 'column',
+  //   width: '100%',
+  //   backgroundColor: 'white',
+  //   padding: 10,
+  //   borderTopLeftRadius: 10,
+  //   borderTopRightRadius: 10,
+  // },
   chatDrawerContainer: {
-    flex: 1,
-    flexDirection: 'column',
-    width: '100%',
+    position: 'absolute',
+    bottom: 60, // To position it just above the message bubble
+    right: 10,
+    width: 300,
+    height: 400,
     backgroundColor: 'white',
-    padding: 10,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    borderRadius: 10,
+    // ... other styles
   },
   textInput: {
     padding: 10,

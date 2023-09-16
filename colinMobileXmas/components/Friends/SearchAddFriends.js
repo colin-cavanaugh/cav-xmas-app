@@ -12,6 +12,7 @@ import { useUser } from '../API/AuthService.js'
 import { useFriends } from './UseFriends'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import PendingRequests from './PendingRequests.js'
 
 const SearchAddFriends = () => {
   const { user } = useUser()
@@ -83,6 +84,9 @@ const SearchAddFriends = () => {
 
   return (
     <View style={{ padding: 20 }}>
+      <View>
+        <PendingRequests />
+      </View>
       <Text>Search and Add Friends</Text>
 
       {/* Search Friends */}
@@ -101,14 +105,6 @@ const SearchAddFriends = () => {
         keyExtractor={item => item._id}
       />
 
-      {/* Display current friends */}
-      {/* <FlatList
-        data={friends}
-        keyExtractor={item => item._id}
-        renderItem={({ item }) => <Text>{item.username}</Text>}
-      /> */}
-
-      {/* Display received friend requests */}
       <FlatList
         data={pendingReceivedRequests}
         keyExtractor={item => item._id}

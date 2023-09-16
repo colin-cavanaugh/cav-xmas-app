@@ -9,11 +9,10 @@ import Icon from 'react-native-vector-icons/Ionicons'
 import Search from 'react-native-vector-icons/Ionicons'
 import Calendar from 'react-native-vector-icons/Ionicons'
 import Loading from 'react-native-vector-icons/AntDesign'
-import Home from '../Home/Home'
 
 const Tab = createBottomTabNavigator()
 
-const BottomTabNavigator = () => {
+const TestNav = () => {
   return (
     <Tab.Navigator>
       <Tab.Screen
@@ -60,4 +59,4 @@ const BottomTabNavigator = () => {
   )
 }
 
-export default BottomTabNavigator
+export default TestNav

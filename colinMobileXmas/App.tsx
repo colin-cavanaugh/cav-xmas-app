@@ -53,6 +53,7 @@ import SocketProvider from './components/API/SocketProvider.js'
 import SocketContext from './components/API/SocketContext.js'
 import io from 'socket.io-client'
 import { AppState, AppStateStatus } from 'react-native'
+import BottomTabNavigator from './components/Social/BottomTabNavigator.js'
 
 type RootStackParamList = {
   Home: undefined
@@ -116,7 +117,6 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
     </DrawerContentScrollView>
   )
 }
-
 function MainSideDrawer() {
   return (
     <Drawer.Navigator
@@ -133,111 +133,38 @@ function MainSideDrawer() {
   )
 }
 
-const FriendsTab = createBottomTabNavigator<FriendsTabParamList>()
+///////////////////////////////////////////////////////////////////////////////// Friends Tab Navigator //////////////////////////////
+// function FriendsButton() {
+//   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>()
 
-function FriendsTabNavigator() {
-  return (
-    <FriendsTab.Navigator
-      screenOptions={{
-        tabBarLabel: '',
-        tabBarStyle: { height: 60, justifyContent: 'center' }, // Adjust the height as needed
-        tabBarItemStyle: { justifyContent: 'center', alignItems: 'center' },
-      }}
-    >
-      <FriendsTab.Screen
-        name='Friends'
-        component={OnlineOffline}
-        initialParams={{
-          friends: [],
-        }}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <UserIcon
-              name='user-check'
-              color={color}
-              size={35}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: [{ translateX: -15 }, { translateY: -15 }],
-              }}
-            />
-          ),
-        }}
-      />
-      <FriendsTab.Screen
-        name='Requests'
-        component={PendingRequests}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <UserIcon
-              name='user-plus'
-              color={color}
-              size={35}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: [{ translateX: -15 }, { translateY: -15 }],
-              }}
-            />
-          ),
-        }}
-      />
-      <FriendsTab.Screen
-        name='Add'
-        component={SearchAddFriends}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Search
-              name='account-search'
-              color={color}
-              size={35}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: [{ translateX: -15 }, { translateY: -15 }],
-              }}
-            />
-          ),
-        }}
-      />
-    </FriendsTab.Navigator>
-  )
-}
-function FriendsButton() {
-  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>()
+//   const currentRouteName = useNavigationState(
+//     state => state?.routes?.[state.index]?.name
+//   )
 
-  const currentRouteName = useNavigationState(
-    state => state?.routes?.[state.index]?.name
-  )
+//   const handlePress = () => {
+//     if (currentRouteName === 'FriendsTabsModal') {
+//       navigation.goBack()
+//     } else {
+//       navigation.navigate('FriendsTabsModal')
+//     }
+//   }
 
-  const handlePress = () => {
-    if (currentRouteName === 'FriendsTabsModal') {
-      navigation.goBack()
-    } else {
-      navigation.navigate('FriendsTabsModal')
-    }
-  }
-
-  return (
-    <TouchableOpacity
-      style={{
-        position: 'absolute',
-        bottom: 675,
-        right: 0,
-        backgroundColor: 'white',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-      }}
-      onPress={handlePress}
-    >
-      <Icon name='people' size={30} color='#607D8B' />
-    </TouchableOpacity>
-  )
-}
+//   return (
+//     <TouchableOpacity
+//       style={{
+//         position: 'absolute',
+//         bottom: 675,
+//         right: 0,
+//         backgroundColor: 'white',
+//         paddingHorizontal: 20,
+//         paddingVertical: 10,
+//       }}
+//       onPress={handlePress}
+//     >
+//       {/* <Icon name='people' size={30} color='#607D8B' /> */}
+//     </TouchableOpacity>
+//   )
+// }
 
 const MainStack = createStackNavigator<MainStackParamList>()
 function App() {
@@ -302,7 +229,12 @@ function App() {
               component={MainSideDrawer}
               options={{ headerShown: false }}
             />
-            <MainStack.Screen
+            {/* <MainStack.Screen
+              name='BottomTab'
+              component={BottomTabNavigator}
+              options={{ headerShown: false }}
+            /> */}
+            {/* <MainStack.Screen
               name='FriendsTabsModal'
               component={FriendsTabNavigator}
               options={{
@@ -310,11 +242,11 @@ function App() {
                 cardOverlayEnabled: true, // This renders a semi-transparent overlay below the modal
                 headerShown: false,
               }}
-            />
+            /> */}
           </MainStack.Navigator>
           {/* <NavigateButton /> */}
-
-          <FriendsButton />
+          {/* <BottomTabNavigator /> */}
+          {/* <FriendsButton /> */}
         </>
       ) : (
         <Stack.Navigator>
@@ -330,3 +262,77 @@ function App() {
 }
 
 export default App
+// const FriendsTab = createBottomTabNavigator<FriendsTabParamList>()
+
+// function FriendsTabNavigator() {
+//   return (
+//     <FriendsTab.Navigator
+//       screenOptions={{
+//         tabBarLabel: '',
+//         tabBarStyle: { height: 60, justifyContent: 'center' }, // Adjust the height as needed
+//         tabBarItemStyle: { justifyContent: 'center', alignItems: 'center' },
+//       }}
+//     >
+//       <FriendsTab.Screen
+//         name='Friends'
+//         component={OnlineOffline}
+//         initialParams={{
+//           friends: [],
+//         }}
+//         options={{
+//           tabBarIcon: ({ color, size }) => (
+//             <UserIcon
+//               name='user-check'
+//               color={color}
+//               size={35}
+//               style={{
+//                 position: 'absolute',
+//                 top: '50%',
+//                 left: '50%',
+//                 transform: [{ translateX: -15 }, { translateY: -15 }],
+//               }}
+//             />
+//           ),
+//         }}
+//       />
+//       <FriendsTab.Screen
+//         name='Requests'
+//         component={PendingRequests}
+//         options={{
+//           tabBarIcon: ({ color, size }) => (
+//             <UserIcon
+//               name='user-plus'
+//               color={color}
+//               size={35}
+//               style={{
+//                 position: 'absolute',
+//                 top: '50%',
+//                 left: '50%',
+//                 transform: [{ translateX: -15 }, { translateY: -15 }],
+//               }}
+//             />
+//           ),
+//         }}
+//       />
+//       <FriendsTab.Screen
+//         name='Add'
+//         component={SearchAddFriends}
+//         options={{
+//           tabBarIcon: ({ color, size }) => (
+//             <Search
+//               name='account-search'
+//               color={color}
+//               size={35}
+//               style={{
+//                 position: 'absolute',
+//                 top: '50%',
+//                 left: '50%',
+//                 transform: [{ translateX: -15 }, { translateY: -15 }],
+//               }}
+//             />
+//           ),
+//         }}
+//       />
+//     </FriendsTab.Navigator>
+//   )
+// }

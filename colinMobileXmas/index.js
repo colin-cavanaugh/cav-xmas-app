@@ -4,12 +4,15 @@ import App from './App'
 import { name as appName } from './app.json'
 import { UserProvider } from './components/API/AuthService'
 import SocketProvider from './components/API/SocketProvider'
+import ChatProvider from './components/API/ChatProvider'
 
 const AppWithProvider = () => {
   return (
     <SocketProvider>
       <UserProvider>
-        <App />
+        <ChatProvider>
+          <App />
+        </ChatProvider>
       </UserProvider>
     </SocketProvider>
   )

@@ -1,14 +1,18 @@
+const dotenv = require('dotenv')
+dotenv.config()
 const express = require('express')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const { ObjectId } = require('mongodb')
-const { sendResponse } = require('./utils') // Assuming utils.js is one level up
 
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
+const { offlineTimers, onlineUsers } = require('../socketController')
 
-module.exports = function (client) {
+module.exports = function (client, io) {
   const router = express.Router()
+  const { sendResponse } = require('./utils')
+  const { markUserOnline, markUserOffline } = require('./dbOperations')
 
   router.post('/api/register', async (req, res) => {
     console.log('POST api/register endpoint called')
@@ -61,11 +65,8 @@ module.exports = function (client) {
       const isMatch = await bcrypt.compare(password, user.password)
 
       if (isMatch) {
-        // Set user's isOnline status to true
-        await client
-          .db('cavanaughDB')
-          .collection('users')
-          .updateOne({ _id: user._id }, { $set: { isOnline: true } })
+        await markUserOnline(client, user._id) // Assuming markUserOnline only requires the userId
+        io.emit('user-online', user._id)
 
         const token = jwt.sign({ userId: user._id.toString() }, ACCESS_SECRET, {
           expiresIn: '1h',
@@ -102,6 +103,7 @@ module.exports = function (client) {
       )
     }
   })
+
   router.post('/api/logout', async (req, res) => {
     const token = req.headers.authorization.split(' ')[1]
 
@@ -111,14 +113,8 @@ module.exports = function (client) {
       if (err)
         return sendResponse(res, 'error', null, 'Token verification failed')
 
-      // Set user's isOnline to false
-      await client
-        .db('cavanaughDB')
-        .collection('users')
-        .updateOne(
-          { _id: new ObjectId(user.userId) },
-          { $set: { isOnline: false } }
-        )
+      await markUserOffline(client, new ObjectId(user.userId)) // Assuming markUserOffline only requires the userId
+      io.emit('user-offline', new ObjectId(user.userId))
 
       // Remove refresh token (optional but recommended for security)
       await client

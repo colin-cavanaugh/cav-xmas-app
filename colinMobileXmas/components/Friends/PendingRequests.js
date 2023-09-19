@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, FlatList, Button } from 'react-native'
 import { useUser } from '../API/AuthService.js'
-import { useFriends } from './UseFriends'
+import { useFriendData } from '../API/FriendsContext.js'
 
 const PendingRequests = () => {
   const { user } = useUser()
@@ -10,7 +10,7 @@ const PendingRequests = () => {
     pendingSentRequests,
     pendingReceivedRequests,
     acceptFriendRequest,
-  } = useFriends(userId)
+  } = useFriendData(userId)
 
   return (
     <View style={{ padding: 20 }}>

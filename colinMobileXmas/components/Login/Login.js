@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useNavigation } from '@react-navigation/native'
 import { useUser } from '../API/AuthService.js'
 import Snowflake from '../Snowflake/Snowflake.tsx'
+import Snowfall from '../Snowflake/Snowfall.tsx'
 // import { BACKEND_URL } from '@env'
 
 const Login = props => {
@@ -109,24 +110,15 @@ const Login = props => {
       console.error('Registration Error:', error)
     }
   }
-  const windowWidth = Dimensions.get('window').width
-  const snowflakes = Array.from({ length: 100 }).map(() => ({
-    size: Math.random() * 10 + 5,
-    left: Math.random() * windowWidth,
-    duration: Math.random() * 3000 + 2000,
-  }))
+  // const windowWidth = Dimensions.get('window').width
+  // const snowflakes = Array.from({ length: 100 }).map(() => ({
+  //   size: Math.random() * 10 + 5,
+  //   left: Math.random() * windowWidth,
+  //   duration: Math.random() * 3000 + 2000,
+  // }))
   return (
     <View style={styles.container}>
-      {snowflakes.map((flake, index) => {
-        return (
-          <Snowflake
-            key={index}
-            size={flake.size}
-            left={flake.left}
-            duration={flake.duration}
-          />
-        )
-      })}
+      <Snowfall />
       <View style={styles.welcomeXmas}>
         <Image
           source={require('../Images/xmas_tree_cartoon.png')}

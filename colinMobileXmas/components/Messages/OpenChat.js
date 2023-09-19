@@ -10,11 +10,11 @@ const OpenChat = ({ friend, onClick }) => {
 
   return (
     <TouchableOpacity style={styles.bubble} onPress={() => openChat(friend)}>
-      {friend.photoUrl ? (
+      {/* {friend.photoUrl ? (
         <Image source={{ uri: friend.photoUrl }} style={styles.profilePic} />
-      ) : (
-        <DefaultIcon name='chatbubble-outline' size={30} color={'blue'} />
-      )}
+      ) : ( */}
+      <DefaultIcon name='chatbubble-outline' size={30} color={'blue'} />
+      {/* )} */}
     </TouchableOpacity>
   )
 }

@@ -1,8 +1,9 @@
 const express = require('express')
 const { ObjectId } = require('mongodb')
-const { sendResponse, authenticateJWT } = require('./utils') // Adjust path accordingly
+// Adjust path accordingly
 module.exports = function (client) {
   const router = express.Router()
+  const { sendResponse, authenticateJWT } = require('./utils')
   ///////////////// Search Users Endpoint //////////////////////
   router.get('/api/user/search', authenticateJWT, async (req, res) => {
     console.log('GET api/user/search endpoint called')

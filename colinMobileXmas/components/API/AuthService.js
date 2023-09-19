@@ -4,6 +4,8 @@ import jwtDecode from 'jwt-decode'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ToastAndroid } from 'react-native'
 import axios from 'axios'
+import { logEvent } from '../utility/utility'
+import { SocketContext } from './SocketContext'
 
 const UserContext = createContext()
 const USER_TOKEN_KEY = 'userToken'
@@ -47,7 +49,8 @@ export const useUser = () => {
   return useContext(UserContext)
 }
 
-export const UserProvider = ({ children, socket }) => {
+export const UserProvider = ({ children }) => {
+  const socket = useContext(SocketContext)
   const initialUserState = {
     userId: null,
     username: null,
@@ -59,25 +62,32 @@ export const UserProvider = ({ children, socket }) => {
   const [user, setUser] = useState(initialUserState)
 
   const login = async (token, refreshToken) => {
+    console.log('Login function triggered')
     try {
       const decodedToken = jwtDecode(token)
       const { userId } = decodedToken
-
+      if (!userId) {
+        console.error('Decoded token does not contain userId.')
+        // Handle the error or return early if userId is not available
+        return
+      }
       await AsyncStorage.multiSet([
         [USER_TOKEN_KEY, token],
         [REFRESH_TOKEN_KEY, refreshToken],
-        [USER_ID_KEY, userId],
+        [USER_ID_KEY, userId.toString()],
       ])
 
       const userProfile = await fetchUserProfile(userId)
       if (userProfile) {
         setUser({ ...userProfile, userId, isOnline: true })
       }
-
       if (socket && socket.connected) {
-        console.log('Socket is connected:', socket.connected)
+        logEvent('go-online', 'authservice.js:login', userId)
+        console.log(
+          '[AuthService.js][1st go-online][go-online event triggered]'
+        )
+        console.log('Socket instance ID in AuthService go-online:', socket.id)
         socket.emit('go-online', userId)
-        console.log('Sent go-online event')
       } else {
         console.log('Socket is not connected')
       }
@@ -148,6 +158,8 @@ export const UserProvider = ({ children, socket }) => {
           REFRESH_TOKEN_KEY,
         ])
         if (user && user.userId && socket) {
+          logEvent('go-offline', 'authservice.js:logout', user.userId)
+          console.log('go-offline event triggered')
           socket.emit('go-offline', user.userId)
           socket.disconnect()
         }

@@ -1,44 +1,79 @@
-import React, { useContext } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  ToastAndroid,
   StyleSheet,
-  Image,
+  TouchableHighlight,
 } from 'react-native'
 import { useUser } from '../API/AuthService.js'
-import DefaultIcon from 'react-native-vector-icons/Ionicons'
 import { ChatContext } from '../API/ChatContext' // import the context
 import OpenChat from '../Messages/OpenChat.js'
+import { useNavigation } from '@react-navigation/native'
+import { SocketContext } from '../API/SocketContext'
 
 const OnlineOfflineFriends = () => {
   const { user } = useUser()
-  const {
-    friendList,
-    activeChats,
-    setActiveChats,
-    setChatDrawerOpen,
-    setCurrentChatFriend,
-  } = useContext(ChatContext) // get required states and functions from ChatProvider
+  const navigation = useNavigation()
+  const { friendList: initialFriendList, setCurrentChatFriend } = useContext(
+    ChatContext
+  )
+  const { socket, onlineFriends } = useContext(SocketContext)
+  const [friendList, setFriendList] = useState(initialFriendList) // Use a local state
+  // console.log('FriendList inside OnlineOfflineFriends:', friendList)
+  const sortedFriendList = friendList.sort((a, b) => {
+    if (a.isOnline && !b.isOnline) return -1
+    if (!a.isOnline && b.isOnline) return 1
+    return 0
+  })
 
-  console.log('FriendList inside OnlineOfflineFriends:', friendList)
+  useEffect(() => {
+    // Update friend online status
+    friendList.forEach(friend => {
+      friend.isOnline = onlineFriends.includes(friend._id)
+    })
+    setFriendList([...friendList]) // Re-render
+  }, [onlineFriends])
 
-  const openChat = friend => {
-    ToastAndroid.showWithGravity(
-      `Chat Opened with ${friend.username}`,
-      ToastAndroid.SHORT,
-      ToastAndroid.CENTER
-    )
-    const isChatActive = activeChats.find(chat => chat._id === friend._id)
-    if (!isChatActive) {
-      setActiveChats([...activeChats, friend])
+  useEffect(() => {
+    if (!socket) return
+
+    const handleFriendOnline = friendId => {
+      const updatedList = friendList.map(friend => {
+        if (friend._id === friendId) {
+          friend.isOnline = true
+        }
+        return friend
+      })
+      setFriendList(updatedList)
+      // Optional: Display a notification here.
     }
+
+    const handleFriendOffline = friendId => {
+      const updatedList = friendList.map(friend => {
+        if (friend._id === friendId) {
+          friend.isOnline = false
+        }
+        return friend
+      })
+      setFriendList(updatedList)
+      // Optional: Display a notification here.
+    }
+
+    socket.on('friend-online', handleFriendOnline)
+    socket.on('friend-offline', handleFriendOffline)
+
+    return () => {
+      socket.off('friend-online', handleFriendOnline)
+      socket.off('friend-offline', handleFriendOffline)
+    }
+  }, [socket, friendList])
+
+  const handleOpenChat = friend => {
     setCurrentChatFriend(friend)
-    setChatDrawerOpen(true)
+    navigation.navigate('ChatRoom', { friendId: friend._id })
   }
-  console.log(friendList)
 
   return (
     <View style={styles.container}>
@@ -49,37 +84,25 @@ const OnlineOfflineFriends = () => {
           data={friendList}
           keyExtractor={item => item._id}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => openChat(item)}>
+            <TouchableHighlight
+              underlayColor='#F0F0F0'
+              onPress={() => handleOpenChat(item)}
+            >
               <View style={styles.friendItem}>
                 <View style={styles.statusIndicator(item.isOnline)} />
-                <Text style={{ fontSize: 14 }}>
-                  {item.username} - {item.isOnline ? 'Online' : 'Offline'}
-                </Text>
+                <Text style={{ fontSize: 14 }}>{item.username}</Text>
+                {item.isOnline && (
+                  <OpenChat friend={item} onClick={handleOpenChat} />
+                )}
               </View>
-            </TouchableOpacity>
+            </TouchableHighlight>
           )}
         />
-      </View>
-
-      {/* Chat Section */}
-      <View style={styles.chatSection}>
-        {/* Chat Drawer (Moved to Home Component, so removing from here) */}
-
-        {/* Active Chat Icons */}
-        <View style={styles.activeChatsContainer}>
-          {activeChats &&
-            activeChats.map(friend => (
-              <OpenChat
-                key={friend._id}
-                friend={friend}
-                onClick={setCurrentChatFriend}
-              />
-            ))}
-        </View>
       </View>
     </View>
   )
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -88,54 +111,23 @@ const styles = StyleSheet.create({
   },
   friendsListContainer: {
     flex: 1,
-    marginBottom: 20, // Gives a bit of space between the lists and chat section
+    marginBottom: 20,
   },
   friendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 5,
+    paddingVertical: 10,
+    borderBottomWidth: 0.5, // subtle line for separation
+    borderBottomColor: '#E0E0E0', // light grey color
   },
   statusIndicator: isOnline => ({
     height: 10,
     width: 10,
     borderRadius: 5,
     backgroundColor: isOnline ? 'green' : 'grey',
-    marginRight: 5,
-  }),
-  chatSection: {
-    flexDirection: 'row',
-    flex: 0.5,
-  },
-  chatContainer: {
-    flex: 0.8,
-    overflow: 'hidden',
-    backgroundColor: 'white',
-  },
-  activeChatsContainer: {
-    flex: 0.2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    marginBottom: 10,
-    borderRadius: 25,
-    overflow: 'hidden',
-  },
-  chatBubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    // ... other chat styles
-  },
-  profilePic: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     marginRight: 10,
-  },
+  }),
 })
 
 export default OnlineOfflineFriends

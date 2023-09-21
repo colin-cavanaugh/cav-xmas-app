@@ -10,10 +10,10 @@ const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     const newSocket = io('http://192.168.0.12:8000')
-    console.log('[Socket Provider 1][Socket instance ID:]', newSocket.id)
 
     newSocket.on('connect', () => {
       console.log('[Socket Provider 2]Socket connected/reconnected!')
+      console.log('[Socket Provider 1][Socket instance ID:]', newSocket.id)
     })
 
     newSocket.on('disconnect', reason => {
@@ -36,7 +36,7 @@ const SocketProvider = ({ children }) => {
     newSocket.on('friend-offline', friendId => {
       setOnlineFriends(prev => prev.filter(id => id !== friendId))
     })
-
+    console.log('[SocketProvider] Setting socket:', newSocket.id)
     setSocket(newSocket)
 
     return () => {

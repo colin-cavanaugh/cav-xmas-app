@@ -12,10 +12,14 @@ import {
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useNavigation } from '@react-navigation/native'
-import { useUser } from '../API/AuthService.js'
+import { useUser } from '../API/UserProvider.js'
 import Snowflake from '../Snowflake/Snowflake.tsx'
 import Snowfall from '../Snowflake/Snowfall.tsx'
-// import { BACKEND_URL } from '@env'
+import {
+  validateUsername,
+  validatePassword,
+} from '../Validations/validations.js'
+import { loginUser, registerUser } from '../Validations/apiService.js'
 
 const Login = props => {
   const { setLoggedIn } = props
@@ -23,30 +27,16 @@ const Login = props => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const navigation = useNavigation()
-  // Validate username and password
-  function validateUsername(username) {
-    const usernameRegex = /^[a-zA-Z0-9_\-.$#@]+[0-9]+[a-zA-Z0-9_\-.$#@]*$/
-    return usernameRegex.test(username)
-  }
-
-  // Validate password upon registration
-  function validatePassword(password) {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!$#%-])[a-zA-Z0-9!$#%-]{8,}$/
-    return passwordRegex.test(password)
-  }
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`http://192.168.0.12:8000/api/login`, {
-        username,
-        password,
-      })
+      const response = await loginUser(username, password)
 
       if (response.data && response.data.status === 'success') {
         const { accessToken, refreshToken } = response.data.data
 
         // Use the login function from the UserContext which should handle storage, etc.
-        login(accessToken, refreshToken) // We're now passing the refreshToken too.
+        login(accessToken, refreshToken)
 
         ToastAndroid.showWithGravity(
           'Successfully logged in!',
@@ -89,13 +79,8 @@ const Login = props => {
       return
     }
     try {
-      const response = await axios.post(
-        `http://192.168.0.12:8000/api/register`,
-        {
-          username,
-          password,
-        }
-      )
+      const response = await registerUser(username, password)
+
       if (response.data && response.data.status === 'success') {
         ToastAndroid.showWithGravity(
           `Successfully Registered as ${username}!`,

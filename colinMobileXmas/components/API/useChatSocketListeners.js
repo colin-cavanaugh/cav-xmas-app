@@ -29,7 +29,7 @@ export const useChatSocketListeners = (
     const handleReceiveMessage = message => {
       addMessageToState(message)
     }
-
+    console.log('right before user-online', socket)
     socket.on('user-online', handleUserOnline)
     socket.on('user-offline', handleUserOffline)
     socket.on('receive-message', handleReceiveMessage)

@@ -74,7 +74,7 @@ function init(httpServer, client) {
       try {
         const result = await markUserOnline(client, userId)
         if (result.modifiedCount === 1) {
-          // socket.broadcast.emit('user-online', userId) // This line notifies everyone. Depending on your app's requirements, you might want to adjust this.
+          socket.broadcast.emit('user-online', userId) // This line notifies everyone. Depending on your app's requirements, you might want to adjust this.
 
           // Start of the block to notify only online friends.
           const friendsList = await fetchFriendsFromDB(client, userId) // Fetch friends from DB. You'll have to implement this function or replace it with your actual function.
@@ -118,7 +118,7 @@ function init(httpServer, client) {
         const result = await markUserOffline(client, userId)
         if (result.modifiedCount === 1) {
           delete onlineUsers[socket.id]
-          // socket.broadcast.emit('user-offline', userId)
+          socket.broadcast.emit('user-offline', userId)
         }
         // Start of the block to notify only online friends.
         const friendsList = await fetchFriendsFromDB(client, userId) // Fetch friends from DB. You'll have to implement this function or replace it with your actual function.

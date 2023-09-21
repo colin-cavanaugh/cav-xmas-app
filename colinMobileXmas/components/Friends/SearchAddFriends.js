@@ -8,11 +8,11 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native'
-import { useUser } from '../API/AuthService.js'
-import { useFriends } from './UseFriends'
+import { useUser } from '../API/UserProvider.js'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import PendingRequests from './PendingRequests.js'
+import { useFriendData } from '../API/FriendsContext.js'
 
 const SearchAddFriends = () => {
   const { user } = useUser()
@@ -23,7 +23,7 @@ const SearchAddFriends = () => {
     sendFriendRequest: sendRequest,
     pendingReceivedRequests,
     acceptFriendRequest,
-  } = useFriends(userId)
+  } = useFriendData(userId)
 
   const [searchUsername, setSearchUsername] = useState('')
   const [foundUsers, setFoundUsers] = useState([])

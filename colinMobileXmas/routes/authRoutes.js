@@ -131,7 +131,7 @@ module.exports = function (client, io) {
     const refreshToken = req.body.token
 
     if (!refreshToken) {
-      return sendResponse(res, 'error', null, 'No token provided')
+      return sendResponse(res, 'error', null, 'No token provided', 400) // 400 Bad Request
     }
 
     const existingToken = await client
@@ -141,7 +141,7 @@ module.exports = function (client, io) {
 
     if (!existingToken) {
       console.error('Refresh token not found in database:', refreshToken)
-      return sendResponse(res, 'error', null, 'Invalid refresh token')
+      return sendResponse(res, 'error', null, 'Invalid refresh token', 401) // 401 Unauthorized
     }
 
     jwt.verify(refreshToken, REFRESH_SECRET, async (err, user) => {

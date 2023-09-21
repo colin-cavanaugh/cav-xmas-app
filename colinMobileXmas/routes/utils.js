@@ -1,8 +1,8 @@
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 const jwt = require('jsonwebtoken')
 
-const sendResponse = (res, status, data, message) => {
-  res.json({
+const sendResponse = (res, status, data, message, httpStatusCode = 200) => {
+  res.status(httpStatusCode).json({
     status,
     data,
     message,

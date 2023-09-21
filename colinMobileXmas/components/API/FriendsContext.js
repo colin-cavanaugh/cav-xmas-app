@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react'
-import { useUser } from '../API/AuthService.js'
+import { useUser } from './UserProvider'
 import { useFriends } from '../Friends/UseFriends'
 
 export const FriendsContext = createContext()

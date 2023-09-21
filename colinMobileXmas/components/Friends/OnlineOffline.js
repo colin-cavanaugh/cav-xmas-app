@@ -7,14 +7,14 @@ import {
   StyleSheet,
   TouchableHighlight,
 } from 'react-native'
-import { useUser } from '../API/AuthService.js'
+import { useUser } from '../API/UserProvider'
 import { ChatContext } from '../API/ChatContext' // import the context
 import OpenChat from '../Messages/OpenChat.js'
 import { useNavigation } from '@react-navigation/native'
 import { SocketContext } from '../API/SocketContext'
 
 const OnlineOfflineFriends = () => {
-  const { user } = useUser()
+  // const { user } = useUser()
   const navigation = useNavigation()
   const { friendList: initialFriendList, setCurrentChatFriend } = useContext(
     ChatContext

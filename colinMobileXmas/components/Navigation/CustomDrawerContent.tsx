@@ -1,5 +1,5 @@
 import React from 'react'
-import { useUser } from '../API/AuthService'
+import { useUser } from '../API/UserProvider'
 import { useFriends } from '../Friends/UseFriends'
 import { View, Image, Text } from 'react-native'
 import {
@@ -13,7 +13,7 @@ import DefaultPhoto from 'react-native-vector-icons/FontAwesome'
 function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { user, logout } = useUser()
   const userId = user?.userId
-  const { friends } = useFriends(userId)
+  // const { friends } = useFriends(userId)
 
   return (
     <DrawerContentScrollView {...props}>

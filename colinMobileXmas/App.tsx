@@ -3,17 +3,17 @@ import React, { useState, useEffect, useContext, useRef } from 'react'
 import { Text, AppState, AppStateStatus } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
-import { useUser } from './components/API/AuthService.js'
+import { useUser } from './components/API/UserProvider'
 import DefaultPhoto from 'react-native-vector-icons/FontAwesome'
 import { SocketContext } from './components/API/SocketContext'
 import BottomTabNavigator from './components/Navigation/BottomTabNavigator.js'
-import { useFriends } from './components/Friends/UseFriends.js'
 import Login from './components/Login/Login'
 import Chat from './components/Social/Chat'
 import MainSideDrawer from './components/Navigation/MainSideDrawer'
 import ChatRoom from './components/Social/ChatRoom.js'
 import { logEvent } from './components/utility/utility.js'
 import { FriendsProvider } from './components/API/FriendsContext.js'
+import ChatProvider from './components/API/ChatProvider'
 
 type MainStackParamList = {
   MainDrawer: undefined
@@ -40,7 +40,7 @@ const MainStack = createStackNavigator<MainStackParamList>()
 
 function App() {
   const { user, loading } = useUser()
-  const userId = user?.userIdr
+  const userId = user?.userId
   const [appState, setAppState] = useState<AppStateStatus>(
     AppState.currentState
   )
@@ -96,42 +96,44 @@ function App() {
   }
 
   return (
-    <FriendsProvider>
-      <NavigationContainer>
-        {user && user.userId ? (
-          <MainStack.Navigator screenOptions={{ presentation: 'modal' }}>
-            <MainStack.Screen
-              name='MainDrawer'
-              component={MainSideDrawer}
-              options={{ headerShown: false }}
-            />
-            <MainStack.Screen
-              name='TabNavigator'
-              options={{ headerShown: false }}
-              children={() => <BottomTabNavigator />}
-            />
-            <MainStack.Screen
-              name='Chat'
-              component={Chat}
-              options={{ title: 'Chat' }}
-            />
-            <MainStack.Screen
-              name='ChatRoom'
-              component={ChatRoom}
-              options={{ title: 'Chat Room' }}
-            />
-          </MainStack.Navigator>
-        ) : (
-          <Stack.Navigator>
-            <Stack.Screen
-              name='Login'
-              component={Login}
-              options={{ headerShown: false }}
-            />
-          </Stack.Navigator>
-        )}
-      </NavigationContainer>
-    </FriendsProvider>
+    <ChatProvider>
+      <FriendsProvider>
+        <NavigationContainer>
+          {user && user.userId ? (
+            <MainStack.Navigator screenOptions={{ presentation: 'modal' }}>
+              <MainStack.Screen
+                name='MainDrawer'
+                component={MainSideDrawer}
+                options={{ headerShown: false }}
+              />
+              <MainStack.Screen
+                name='TabNavigator'
+                options={{ headerShown: false }}
+                children={() => <BottomTabNavigator />}
+              />
+              <MainStack.Screen
+                name='Chat'
+                component={Chat}
+                options={{ title: 'Chat' }}
+              />
+              <MainStack.Screen
+                name='ChatRoom'
+                component={ChatRoom}
+                options={{ title: 'Chat Room' }}
+              />
+            </MainStack.Navigator>
+          ) : (
+            <Stack.Navigator>
+              <Stack.Screen
+                name='Login'
+                component={Login}
+                options={{ headerShown: false }}
+              />
+            </Stack.Navigator>
+          )}
+        </NavigationContainer>
+      </FriendsProvider>
+    </ChatProvider>
   )
 }
 

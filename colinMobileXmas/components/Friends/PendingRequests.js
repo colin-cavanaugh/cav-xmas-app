@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, FlatList, Button } from 'react-native'
-import { useUser } from '../API/AuthService.js'
+import { useUser } from '../API/UserProvider.js'
 import { useFriendData } from '../API/FriendsContext.js'
 
 const PendingRequests = () => {

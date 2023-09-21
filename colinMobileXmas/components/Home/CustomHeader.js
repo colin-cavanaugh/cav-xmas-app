@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 import DefaultPhoto from 'react-native-vector-icons/FontAwesome'
 import ChatIcon from 'react-native-vector-icons/SimpleLineIcons'
-import { useUser } from '../API/AuthService'
+import { useUser } from '../API/UserProvider'
 import Snowfall from '../Snowflake/Snowfall'
 import ChatDrawer from '../Social/ChatDrawer'
 

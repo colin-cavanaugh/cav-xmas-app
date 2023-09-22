@@ -6,17 +6,26 @@ const {
 const onlineUsers = {}
 const offlineTimers = {}
 let io
+function addSocketIdForUser(userId, socketId) {
+  if (!onlineUsers[userId]) {
+    onlineUsers[userId] = []
+  }
+  onlineUsers[userId].push(socketId)
+}
 
-function getSocketIdOfUser(userId) {
-  console.log('[socketController.js][1][Getting socket ID for user:]', userId)
-  for (let [socketId, uid] of Object.entries(onlineUsers)) {
-    if (uid === userId) {
-      console.log('Found socket ID:', socketId)
-      return socketId
+function removeSocketIdForUser(userId, socketId) {
+  if (onlineUsers[userId]) {
+    onlineUsers[userId] = onlineUsers[userId].filter(id => id !== socketId)
+    if (onlineUsers[userId].length === 0) {
+      delete onlineUsers[userId]
     }
   }
-  return null
 }
+
+function getSocketIdsOfUser(userId) {
+  return onlineUsers[userId] || []
+}
+
 function setOfflineAfterDelay(userId, delay) {
   if (offlineTimers[userId]) {
     clearTimeout(offlineTimers[userId])
@@ -25,10 +34,19 @@ function setOfflineAfterDelay(userId, delay) {
     try {
       const result = await markUserOffline(client, userId)
       if (result.modifiedCount === 1) {
-        const socketId = getSocketIdOfUser(userId)
-        if (socketId) {
-          delete onlineUsers[socketId]
+        const socketIds = getSocketIdsOfUser(userId)
+        if (socketIds && socketIds.length) {
+          // Filter out the socketIds you want to remove.
+          onlineUsers[userId] = onlineUsers[userId].filter(
+            id => !socketIds.includes(id)
+          )
+
+          // If no socketIds left for that user, delete the user from the onlineUsers object.
+          if (!onlineUsers[userId].length) {
+            delete onlineUsers[userId]
+          }
         }
+
         io.sockets.emit('user-offline', userId) // Notify all clients about the user going offline.
       }
     } catch (error) {
@@ -58,14 +76,13 @@ function init(httpServer, client) {
         clearTimeout(offlineTimers[userId])
         delete offlineTimers[userId]
       }
-
+      addSocketIdForUser(userId, socket.id)
       console.log(
         '[socketController.js][4][User with id:]',
         userId,
         'went online.'
       )
 
-      onlineUsers[socket.id] = userId
       console.log(
         '[socketController.js][5][Updated onlineUsers after go-online event:]',
         onlineUsers
@@ -74,15 +91,17 @@ function init(httpServer, client) {
       try {
         const result = await markUserOnline(client, userId)
         if (result.modifiedCount === 1) {
+          console.log('Socket Broadcast backend user-online')
           socket.broadcast.emit('user-online', userId) // This line notifies everyone. Depending on your app's requirements, you might want to adjust this.
 
           // Start of the block to notify only online friends.
           const friendsList = await fetchFriendsFromDB(client, userId) // Fetch friends from DB. You'll have to implement this function or replace it with your actual function.
-          const onlineFriends = friendsList.filter(friendId =>
-            Object.values(onlineUsers).includes(friendId)
+          const onlineFriends = friendsList.filter(
+            friendId => onlineUsers[friendId]
           )
+
           onlineFriends.forEach(friendId => {
-            const friendSocketId = getSocketIdOfUser(friendId)
+            const friendSocketId = getSocketIdsOfUser(friendId)
             if (friendSocketId) {
               io.to(friendSocketId).emit('friend-online', userId)
             }
@@ -98,47 +117,58 @@ function init(httpServer, client) {
     })
 
     socket.on('disconnect', () => {
-      const userId = onlineUsers[socket.id]
-      console.log(
-        `[socketController.js][6][Received 'disconnect' event for user ID:] ${userId} with socket ID: ${socket.id}`
+      const userIdsForSocket = Object.keys(onlineUsers).filter(uid =>
+        onlineUsers[uid].includes(socket.id)
       )
-      if (userId) {
-        setOfflineAfterDelay(userId, 5 * 60 * 1000) // Wait for 5 minutes before setting offline
-      }
+      userIdsForSocket.forEach(userId => {
+        removeSocketIdForUser(userId, socket.id)
+        if (!getSocketIdsOfUser(userId).length) {
+          setOfflineAfterDelay(userId, 5 * 60 * 1000)
+        }
+      })
     })
     socket.on('go-offline', async userId => {
       console.log(`Received 'go-offline' event for user ID: ${userId}`)
+
       if (offlineTimers[userId]) {
         clearTimeout(offlineTimers[userId])
         delete offlineTimers[userId]
       }
-      console.log('User with id:', userId, 'went offline.')
 
-      try {
-        const result = await markUserOffline(client, userId)
-        if (result.modifiedCount === 1) {
-          delete onlineUsers[socket.id]
-          socket.broadcast.emit('user-offline', userId)
-        }
-        // Start of the block to notify only online friends.
-        const friendsList = await fetchFriendsFromDB(client, userId) // Fetch friends from DB. You'll have to implement this function or replace it with your actual function.
-        const onlineFriends = friendsList.filter(friendId =>
-          Object.values(onlineUsers).includes(friendId)
-        )
-        onlineFriends.forEach(friendId => {
-          const friendSocketId = getSocketIdOfUser(friendId)
-          if (friendSocketId) {
-            io.to(friendSocketId).emit('friend-offline', userId)
+      removeSocketIdForUser(userId, socket.id)
+
+      if (!getSocketIdsOfUser(userId).length) {
+        // Check if no more socket IDs exist for this user
+        try {
+          const result = await markUserOffline(client, userId)
+          if (result.modifiedCount === 1) {
+            socket.broadcast.emit('user-offline', userId)
+
+            // Start of the block to notify only online friends.
+            const friendsList = await fetchFriendsFromDB(client, userId)
+
+            // Adjust the logic to find online friends
+            const onlineFriends = friendsList.filter(
+              friendId => onlineUsers[friendId] && onlineUsers[friendId].length
+            )
+
+            onlineFriends.forEach(friendId => {
+              const friendSocketIds = getSocketIdsOfUser(friendId)
+              friendSocketIds.forEach(friendSocketId => {
+                io.to(friendSocketId).emit('friend-offline', userId)
+              })
+            })
+            // End of the block to notify only online friends.
           }
-        })
-        // End of the block to notify only online friends.
-      } catch (error) {
-        console.error(
-          `Failed to mark user with ID: ${userId} as offline.`,
-          error
-        )
+        } catch (error) {
+          console.error(
+            `Failed to mark user with ID: ${userId} as offline.`,
+            error
+          )
+        }
       }
     })
+
     socket.on('send-message', data => {
       console.log(
         '[socketController.js][7][Online Users Object in send-message]',
@@ -147,7 +177,7 @@ function init(httpServer, client) {
       const { sender, recipient, content } = data
 
       // Check if recipient is online
-      const recipientSocketId = getSocketIdOfUser(recipient)
+      const recipientSocketId = getSocketIdsOfUser(recipient)
       if (!recipientSocketId) {
         console.log(`Recipient with ID: ${recipient} is not online.`)
         // Send a feedback message to the sender, notifying them that

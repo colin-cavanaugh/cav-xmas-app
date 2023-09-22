@@ -11,7 +11,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import jwtDecode from 'jwt-decode'
 import axios from 'axios'
 import { logEvent } from '../utility/utility'
-import { ToastAndroid } from 'react-native'
+import { ToastAndroid, Text } from 'react-native'
+
+export const UserContext = createContext()
 
 export function useUser() {
   const context = useContext(UserContext)
@@ -22,10 +24,9 @@ export function useUser() {
 
   return context
 }
-export const UserContext = createContext()
 
 export const UserProvider = ({ children }) => {
-  const socket = useContext(SocketContext)
+  const { socket, socketLoading } = useContext(SocketContext)
   const initialUserState = {
     userId: null,
     username: null,
@@ -43,6 +44,7 @@ export const UserProvider = ({ children }) => {
     setTimeout(logout, delay * 1000)
   }
   const login = async (token, refreshToken) => {
+    console.log('socket in login', socket)
     console.log('Login function triggered')
     try {
       const decodedToken = jwtDecode(token)
@@ -62,15 +64,15 @@ export const UserProvider = ({ children }) => {
         setUser({ ...userProfile, userId, isOnline: true })
       }
       if (socket && socket.connected) {
-        logEvent('go-online', 'authservice.js:login', userId)
+        logEvent('go-online', 'UserProvider.js:fetchUserProfile', userId)
         console.log(
           '[AuthService.js][1st go-online][go-online event triggered]'
         )
-        console.log('Socket instance ID in AuthService go-online:', socket.id)
+        console.log('Socket instance ID in UserProvider go-online:', socket.id)
         socket.emit('go-online', userId)
         setLogoutTimer(decodedToken.exp)
       } else {
-        console.log('Socket is not connected')
+        console.log('Socket is not connected', socket)
       }
     } catch (error) {
       console.error('Error during login:', error)
@@ -80,6 +82,7 @@ export const UserProvider = ({ children }) => {
     }
   }
   const logout = async () => {
+    console.log('socket in logout', socket)
     if (logoutTimer) clearTimeout(logoutTimer)
     try {
       const userToken = await AsyncStorage.getItem(USER_TOKEN_KEY)
@@ -111,13 +114,14 @@ export const UserProvider = ({ children }) => {
           REFRESH_TOKEN_KEY,
         ])
         if (user && user.userId && socket) {
+          console.log('UserProvider go-offline', user.userId, socket.connected)
           logEvent('go-offline', '[UserProvider:logout]', user.userId)
           console.log('go-offline event triggered')
-          socket.emit('go-offline', user.userId)
-          setTimeout(() => {
-            socket.disconnect()
-          }, 1000) // add a delay before disconnecting
+          if (socket.connected) {
+            socket.emit('go-offline', user.userId)
+          }
         }
+
         setUser(initialUserState)
       } else {
         console.error('Logout error:', response.data.message)
@@ -150,11 +154,18 @@ export const UserProvider = ({ children }) => {
           await AsyncStorage.removeItem(USER_TOKEN_KEY)
         }
       }
-      setUser(newUserState)
+      // Check if the new user state differs from the current one
+      if (JSON.stringify(newUserState) !== JSON.stringify(user)) {
+        setUser(newUserState)
+      }
     }
 
     getTokenAndDecode()
   }, [])
+
+  if (socketLoading) {
+    return <Text>Connecting to server...</Text>
+  }
 
   return (
     <UserContext.Provider value={{ user, login, logout, setUser }}>

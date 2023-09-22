@@ -1,64 +1,94 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useEffect, useState, useContext, useFocusEffect } from 'react'
 import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
-  StyleSheet,
   TouchableHighlight,
+  StyleSheet,
+  ToastAndroid,
 } from 'react-native'
 import { useUser } from '../API/UserProvider'
-import { ChatContext } from '../API/ChatContext' // import the context
-import OpenChat from '../Messages/OpenChat.js'
 import { useNavigation } from '@react-navigation/native'
 import { SocketContext } from '../API/SocketContext'
+import { useFriends } from './UseFriends'
 
 const OnlineOfflineFriends = () => {
-  // const { user } = useUser()
+  const { user } = useUser()
   const navigation = useNavigation()
-  const { friendList: initialFriendList, setCurrentChatFriend } = useContext(
-    ChatContext
-  )
+  const userId = user?.userId
+  const { friends: initialFriends } = useFriends(userId)
+  console.log('Initial Friends:', initialFriends)
   const { socket, onlineFriends } = useContext(SocketContext)
-  const [friendList, setFriendList] = useState(initialFriendList) // Use a local state
-  // console.log('FriendList inside OnlineOfflineFriends:', friendList)
+  const [loading, setLoading] = useState(true)
+  const [friendList, setFriendList] = useState([...initialFriends])
+
   const sortedFriendList = friendList.sort((a, b) => {
     if (a.isOnline && !b.isOnline) return -1
     if (!a.isOnline && b.isOnline) return 1
     return 0
   })
+  useEffect(() => {
+    if (initialFriends && initialFriends.length > 0) {
+      setFriendList([...initialFriends])
+      setLoading(false)
+    }
+  }, [initialFriends])
 
   useEffect(() => {
-    // Update friend online status
-    friendList.forEach(friend => {
-      friend.isOnline = onlineFriends.includes(friend._id)
+    let isChanged = false
+    const updatedList = sortedFriendList.map(friend => {
+      const isCurrentlyOnline = onlineFriends.includes(friend._id)
+      if (friend.isOnline !== isCurrentlyOnline) {
+        isChanged = true
+      }
+      return {
+        ...friend,
+        isOnline: isCurrentlyOnline,
+      }
     })
-    setFriendList([...friendList]) // Re-render
+
+    if (isChanged) {
+      setFriendList(updatedList)
+    }
   }, [onlineFriends])
 
   useEffect(() => {
-    if (!socket) return
+    if (!socket || !socket.connected) return
 
     const handleFriendOnline = friendId => {
+      const friend = friendList.find(f => f._id === friendId)
+      if (friend && friend.username) {
+        ToastAndroid.showWithGravity(
+          `${friend.username} is online!`,
+          ToastAndroid.SHORT,
+          ToastAndroid.BOTTOM
+        )
+      }
       const updatedList = friendList.map(friend => {
         if (friend._id === friendId) {
-          friend.isOnline = true
+          return { ...friend, isOnline: true }
         }
         return friend
       })
       setFriendList(updatedList)
-      // Optional: Display a notification here.
     }
 
     const handleFriendOffline = friendId => {
+      const friend = friendList.find(f => f._id === friendId)
+      if (friend && friend.username) {
+        ToastAndroid.showWithGravity(
+          `${friend.username} is offline.`,
+          ToastAndroid.SHORT,
+          ToastAndroid.BOTTOM
+        )
+      }
       const updatedList = friendList.map(friend => {
         if (friend._id === friendId) {
-          friend.isOnline = false
+          return { ...friend, isOnline: false }
         }
         return friend
       })
       setFriendList(updatedList)
-      // Optional: Display a notification here.
     }
 
     socket.on('friend-online', handleFriendOnline)
@@ -71,13 +101,23 @@ const OnlineOfflineFriends = () => {
   }, [socket, friendList])
 
   const handleOpenChat = friend => {
-    setCurrentChatFriend(friend)
+    console.log(
+      'Current User:',
+      user.username,
+      'Friend Pressed:',
+      'Id:',
+      friend._id,
+      'Username:',
+      friend.username
+    )
     navigation.navigate('ChatRoom', { friendId: friend._id })
+  }
+  if (loading) {
+    return <Text>Loading friends...</Text>
   }
 
   return (
     <View style={styles.container}>
-      {/* Friends List */}
       <View style={styles.friendsListContainer}>
         <Text>Your Friends</Text>
         <FlatList
@@ -91,9 +131,6 @@ const OnlineOfflineFriends = () => {
               <View style={styles.friendItem}>
                 <View style={styles.statusIndicator(item.isOnline)} />
                 <Text style={{ fontSize: 14 }}>{item.username}</Text>
-                {item.isOnline && (
-                  <OpenChat friend={item} onClick={handleOpenChat} />
-                )}
               </View>
             </TouchableHighlight>
           )}

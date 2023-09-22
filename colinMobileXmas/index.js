@@ -10,9 +10,7 @@ const AppWithProvider = () => {
   return (
     <SocketProvider>
       <UserProvider>
-        {/* <ChatProvider> */}
         <App />
-        {/* </ChatProvider> */}
       </UserProvider>
     </SocketProvider>
   )

@@ -1,11 +1,8 @@
 import React, { useState, useContext, useCallback, useEffect } from 'react'
-import { useFriends } from '../Friends/UseFriends'
+import { useUser } from './UserProvider'
 import { SocketContext } from './SocketContext'
 import { ChatContext } from './ChatContext'
 import { getChatId } from '../utility/utility'
-import { useUser } from './UserProvider'
-// import { useChatSocketListeners } from './useChatSocketListeners'
-import isEqual from 'lodash.isequal'
 
 type ChatMessage = {
   sender: string
@@ -16,38 +13,30 @@ type ChatMessage = {
 type ChatMessages = {
   [chatId: string]: ChatMessage[]
 }
-
-type Friend = {
-  _id: string
-  isOnline?: boolean
-  // Add other properties as needed
+type ChatContextType = {
+  addMessageToState: (message: ChatMessage) => void
 }
+
 type ChatProviderProps = {
   children: React.ReactNode
 }
 
 const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
-  console.log('[CHAT PROVIDER RENDER]')
   const { user } = useUser()
   const userId = user?.userId
 
+  console.log('[CHAT PROVIDER RENDER]', user.username)
+
   const [chatMessages, setChatMessages] = useState<ChatMessages>({})
-  // const [activeChats, setActiveChats] = useState<string[]>([])
-  const [friendList, setFriendList] = useState<Friend[]>([])
-  const { friends } = useFriends(userId)
-  // // const [minimizedChats, setMinimizedChats] = useState<string[]>([])
   const [currentChatFriend, setCurrentChatFriend] = useState<string | null>(
     null
   )
   const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([])
-  // const [message, setMessage] = useState('')
-  const socket = useContext(SocketContext)
+  const { socket } = useContext(SocketContext)
 
   const addMessageToState = useCallback(
     (message: ChatMessage) => {
-      console.log('Before adding message:', currentMessages)
       const chatId = getChatId(message.sender, message.recipient)
-
       setChatMessages(prev => {
         const newMessagesForChatId = [...(prev[chatId] || []), message]
         return {
@@ -55,79 +44,45 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           [chatId]: newMessagesForChatId,
         }
       })
-
-      if (chatId === getChatId(userId, currentChatFriend)) {
-        setCurrentMessages(prevMessages => [...prevMessages, message])
-      }
-
-      console.log('After adding message:', currentMessages)
     },
     [userId, currentChatFriend]
   )
 
-  // useEffect(() => {
-  //   if (currentChatFriend) {
-  // const chatId = getChatId(userId, currentChatFriend)
-  //     setCurrentMessages(chatMessages[chatId] || [])
-  //   }
-  // }, [currentChatFriend, userId])
-
-  // // // Integrate the socket listeners
-
-  // useChatSocketListeners(setFriendList, addMessageToState, socket)
-
-  // // // Function to send messages
-  // const sendMessage = (recipientId: string, content: string) => {
-  //   console.log('sendMessage called in ChatProvider')
-
-  //   if (!socket || !userId) return
-
-  //   const message = {
-  //     sender: userId,
-  //     recipient: recipientId,
-  //     content,
-  //   }
-
-  //   socket.emit('send-message', message)
-  //   console.log('Socket instance ID in ChatProvider send-message:', socket.id)
-  //   addMessageToState(message)
-  //   setMessage('') // Clear the input
-  // }
-
   useEffect(() => {
-    if (friends && friends.length > 0 && !isEqual(friends, friendList)) {
-      setFriendList(friends)
+    console.log(
+      'Current chat friend:',
+      currentChatFriend,
+      'Current User:',
+      userId
+    )
+    if (currentChatFriend) {
+      const chatId = getChatId(userId, currentChatFriend)
+      setCurrentMessages(chatMessages[chatId] || [])
     }
-  }, [friends, friendList])
+  }, [currentChatFriend, userId])
 
-  // const isChatMinimized = (friend: Friend) => {
-  //   return minimizedChats.includes(friend._id)
-  // }
+  const sendMessage = (friendId: string, message: string) => {
+    const payload = {
+      sender: userId,
+      recipient: friendId,
+      content: message,
+    }
 
-  // const minimizeChat = (friend: Friend) => {
-  //   setMinimizedChats(prevState => [...prevState, friend._id])
-  // }
+    // Here, make sure that your socket object is valid
+    if (socket) {
+      console.log('Sending message payload:', payload)
+      socket.emit('send-message', payload)
+    }
 
-  // const maximizeChat = (friend: Friend) => {
-  //   setMinimizedChats(prevState => prevState.filter(id => id !== friend._id))
-  // }
+    addMessageToState(payload) // This will update the UI immediately, optimistic update
+  }
 
   const value = {
-    // activeChats,
-    // setActiveChats,
     chatMessages,
     setChatMessages,
-    friendList,
-    // setFriendList,
-    // isChatMinimized,
-    // minimizeChat,
-    // maximizeChat,
-    // minimizedChats,
-    // setCurrentChatFriend,
-    // currentMessages,
-    // setCurrentMessages,
-    // addMessageToState,
-    // sendMessage,
+    setCurrentChatFriend,
+    sendMessage,
+    addMessageToState,
   }
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>

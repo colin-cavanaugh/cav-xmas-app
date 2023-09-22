@@ -7,7 +7,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native'
-import { useUser } from '../API/AuthService'
+import { useUser } from '../API/UserProvider'
 import { getChatId } from '../utility/utility'
 import { SocketContext } from '../API/SocketContext'
 import { useFriends } from '../Friends/UseFriends'
@@ -16,14 +16,8 @@ import LoadingIndicator from './LoadingIndicator'
 
 const ChatRoom = ({ route }) => {
   const {
-    activeChats,
-    setActiveChats,
     chatMessages,
-    setChatMessages,
-    friendList,
-    currentMessages,
     addMessageToState,
-    setCurrentMessages,
     sendMessage,
     setCurrentChatFriend,
   } = useContext(ChatContext)
@@ -31,11 +25,26 @@ const ChatRoom = ({ route }) => {
   const { user } = useUser()
   const userId = user?.userId
   const chatId = getChatId(userId, friendId)
-  const socket = useContext(SocketContext)
+  const { socket, onlineFriends, setLoading } = useContext(SocketContext)
   const [message, setMessage] = useState('')
+  const { friends: friendList } = useFriends()
   const friendDetails = friendList.find(friend => friend._id === friendId)
   const [isSocketConnected, setIsSocketConnected] = useState(false)
 
+  const currentMessages = chatMessages[chatId] || []
+
+  useEffect(() => {
+    if (friendId) {
+      console.log('Chat FriendId:', friendId)
+      setCurrentChatFriend(friendId)
+    }
+  }, [friendId])
+
+  useEffect(() => {
+    if (friendList && friendList.length > 0) {
+      setLoading(false)
+    }
+  }, [friendList, friendId])
   useEffect(() => {
     // Connect event
     socket.on('connect', () => {
@@ -130,7 +139,13 @@ const ChatRoom = ({ route }) => {
         style={styles.textInput}
         placeholder='Type a message...'
       />
-      <Button title='Send' onPress={() => sendMessage(friendId, message)} />
+      <Button
+        title='Send'
+        onPress={() => {
+          sendMessage(friendId, message)
+          setMessage('')
+        }}
+      />
       {/* <Button title='Add Test Message' onPress={addTestMessage} /> */}
     </View>
   )

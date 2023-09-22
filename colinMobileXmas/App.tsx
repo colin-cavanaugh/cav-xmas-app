@@ -6,13 +6,14 @@ import { createStackNavigator } from '@react-navigation/stack'
 import { useUser } from './components/API/UserProvider'
 import DefaultPhoto from 'react-native-vector-icons/FontAwesome'
 import { SocketContext } from './components/API/SocketContext'
+import { CustomSocket } from './components/API/SocketTypes'
 import BottomTabNavigator from './components/Navigation/BottomTabNavigator.js'
 import Login from './components/Login/Login'
 import Chat from './components/Social/Chat'
 import MainSideDrawer from './components/Navigation/MainSideDrawer'
 import ChatRoom from './components/Social/ChatRoom.js'
 import { logEvent } from './components/utility/utility.js'
-import { FriendsProvider } from './components/API/FriendsContext.js'
+// import { FriendsProvider } from './components/API/FriendsContext.js'
 import ChatProvider from './components/API/ChatProvider'
 
 type MainStackParamList = {
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   FriendsNav: undefined
   Drawer: undefined
 }
+
 const Stack = createStackNavigator<RootStackParamList>()
 const MainStack = createStackNavigator<MainStackParamList>()
 
@@ -44,7 +46,7 @@ function App() {
   const [appState, setAppState] = useState<AppStateStatus>(
     AppState.currentState
   )
-  const socket = useContext(SocketContext)
+  const socket = useContext(SocketContext) as CustomSocket | null
   const appStateRef = useRef(appState)
   useEffect(() => {
     appStateRef.current = appState
@@ -66,7 +68,10 @@ function App() {
           user?.userId
         ) {
           logEvent('go-online', 'App.tsx:handleAppStateChange', user.userId)
-          ;(socket as any).emit('go-online', user.userId)
+          console.log('Socket in App.tsx go-online Socket Value:', socket)
+          if (socket) {
+            ;(socket as any).emit('go-online', user.userId)
+          }
         } else if (
           nextAppState.match(/inactive|background/) &&
           appStateRef.current === 'active' &&
@@ -74,7 +79,10 @@ function App() {
           user?.userId
         ) {
           logEvent('go-offline', 'App.tsx:handleAppStateChange', user.userId)
-          ;(socket as any).emit('go-offline', user.userId)
+          // console.log('Socket in App.tsx go-offline Socket Value:', socket)
+          if (socket) {
+            ;(socket as any).emit('go-offline', user.userId)
+          }
         }
 
         setAppState(nextAppState)
@@ -97,42 +105,41 @@ function App() {
 
   return (
     <ChatProvider>
-      <FriendsProvider>
-        <NavigationContainer>
-          {user && user.userId ? (
-            <MainStack.Navigator screenOptions={{ presentation: 'modal' }}>
-              <MainStack.Screen
-                name='MainDrawer'
-                component={MainSideDrawer}
-                options={{ headerShown: false }}
-              />
-              <MainStack.Screen
-                name='TabNavigator'
-                options={{ headerShown: false }}
-                children={() => <BottomTabNavigator />}
-              />
-              <MainStack.Screen
-                name='Chat'
-                component={Chat}
-                options={{ title: 'Chat' }}
-              />
-              <MainStack.Screen
-                name='ChatRoom'
-                component={ChatRoom}
-                options={{ title: 'Chat Room' }}
-              />
-            </MainStack.Navigator>
-          ) : (
-            <Stack.Navigator>
-              <Stack.Screen
-                name='Login'
-                component={Login}
-                options={{ headerShown: false }}
-              />
-            </Stack.Navigator>
-          )}
-        </NavigationContainer>
-      </FriendsProvider>
+      {/* <FriendsProvider> */}
+      <NavigationContainer>
+        {user && user.userId ? (
+          <MainStack.Navigator screenOptions={{ presentation: 'modal' }}>
+            <MainStack.Screen
+              name='MainDrawer'
+              component={MainSideDrawer}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name='TabNavigator'
+              options={{ headerShown: false }}
+              children={() => <BottomTabNavigator />}
+            />
+            <MainStack.Screen
+              name='Chat'
+              component={Chat}
+              options={{ title: 'Chat' }}
+            />
+            <MainStack.Screen
+              name='ChatRoom'
+              component={ChatRoom}
+              options={{ title: 'Chat Room' }}
+            />
+          </MainStack.Navigator>
+        ) : (
+          <Stack.Navigator>
+            <Stack.Screen
+              name='Login'
+              component={Login}
+              options={{ headerShown: false }}
+            />
+          </Stack.Navigator>
+        )}
+      </NavigationContainer>
     </ChatProvider>
   )
 }

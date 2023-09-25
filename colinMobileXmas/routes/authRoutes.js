@@ -31,10 +31,18 @@ module.exports = function (client, io) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     try {
-      await client
-        .db('cavanaughDB')
-        .collection('users')
-        .insertOne({ username, password: hashedPassword })
+      // Initialize the friends, sentRequests, and friendRequests arrays
+      const newUser = {
+        username,
+        password: hashedPassword,
+        friends: [],
+        sentRequests: [],
+        friendRequests: [],
+        isOnline: false,
+        photoUrl: '', // or some default photo URL
+      }
+
+      await client.db('cavanaughDB').collection('users').insertOne(newUser)
 
       const dataToSend = { key: username }
       sendResponse(res, 'success', dataToSend, 'Registration Successful.')
@@ -65,12 +73,15 @@ module.exports = function (client, io) {
       const isMatch = await bcrypt.compare(password, user.password)
 
       if (isMatch) {
+        console.log('About to mark user online')
         await markUserOnline(client, user._id) // Assuming markUserOnline only requires the userId
         io.emit('user-online', user._id)
+        console.log('Marked user online')
 
         const token = jwt.sign({ userId: user._id.toString() }, ACCESS_SECRET, {
           expiresIn: '1h',
         })
+        console.log('Generated Token:', token)
 
         const refreshToken = jwt.sign(
           { userId: user._id.toString() },
@@ -110,8 +121,10 @@ module.exports = function (client, io) {
     if (!token) return sendResponse(res, 'error', null, 'No token provided')
 
     jwt.verify(token, ACCESS_SECRET, async (err, user) => {
-      if (err)
+      if (err) {
+        console.error('Token verification failed:', err)
         return sendResponse(res, 'error', null, 'Token verification failed')
+      }
 
       await markUserOffline(client, new ObjectId(user.userId)) // Assuming markUserOffline only requires the userId
       io.emit('user-offline', new ObjectId(user.userId))
@@ -160,7 +173,7 @@ module.exports = function (client, io) {
       const accessToken = jwt.sign({ userId: user.userId }, ACCESS_SECRET, {
         expiresIn: '1h',
       })
-
+      console.log('Access Token in Token API', accessToken)
       return sendResponse(res, 'success', { accessToken }, 'Token refreshed')
     })
   })

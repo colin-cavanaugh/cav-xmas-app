@@ -3,13 +3,15 @@ const bcrypt = require('bcrypt')
 const { MongoClient, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const dotenv = require('dotenv')
+const { io, onlineUsers } = require('../SocketController')
+
 // Adjust the path as necessary
 
 dotenv.config()
 const port = 8000
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 
-module.exports = function (client) {
+module.exports = function (client, io) {
   const router = express.Router()
   const { authenticateJWT } = require('./utils')
   ///////////////// Fetch All Friend Data Endpoint //////////////////////
@@ -115,7 +117,18 @@ module.exports = function (client) {
   router.post('/api/user/:id/acceptFriendRequest', async (req, res) => {
     const userId = req.params.id
     const friendId = req.body.friendId
+
     try {
+      // Fetch user and friend details
+      const user = await client
+        .db('cavanaughDB')
+        .collection('users')
+        .findOne({ _id: new ObjectId(userId) })
+      const friend = await client
+        .db('cavanaughDB')
+        .collection('users')
+        .findOne({ _id: new ObjectId(friendId) })
+
       // Remove the friend request
       await client
         .db('cavanaughDB')
@@ -125,13 +138,30 @@ module.exports = function (client) {
           { $pull: { friendRequests: new ObjectId(friendId) } }
         )
 
+      // Prepare the friend objects to be inserted
+      const userFriendObject = {
+        id: friend._id.toString(),
+        username: friend.username,
+        isOnline: friend.isOnline || false,
+        photoUrl: user.photoUrl,
+        // ...other attributes
+      }
+
+      const friendFriendObject = {
+        id: user._id.toString(),
+        username: user.username,
+        isOnline: user.isOnline || false,
+        photoUrl: user.photoUrl,
+        // ...other attributes
+      }
+
       // Add each user to the other's friends list
       await client
         .db('cavanaughDB')
         .collection('users')
         .updateOne(
           { _id: new ObjectId(userId) },
-          { $push: { friends: new ObjectId(friendId) } }
+          { $push: { friends: userFriendObject } }
         )
 
       await client
@@ -139,8 +169,23 @@ module.exports = function (client) {
         .collection('users')
         .updateOne(
           { _id: new ObjectId(friendId) },
-          { $push: { friends: new ObjectId(userId) } }
+          { $push: { friends: friendFriendObject } }
         )
+      // After adding each user to the other's friend list
+
+      // Emit socket event if the user is online
+      if (onlineUsers[userId]) {
+        req.io
+          .to(onlineUsers[userId])
+          .emit('friend-request-accepted', friendFriendObject)
+      }
+
+      // Emit socket event if the friend is online
+      if (onlineUsers[friendId]) {
+        req.io
+          .to(onlineUsers[friendId])
+          .emit('friend-request-accepted', userFriendObject)
+      }
 
       res.status(200).send('Friend request accepted')
     } catch (error) {

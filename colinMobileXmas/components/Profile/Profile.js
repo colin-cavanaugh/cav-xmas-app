@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useContext, useEffect } from 'react'
 import axios from 'axios'
 import { View, Text, Image, Button, TouchableOpacity } from 'react-native'
-import { useUser } from '../API/UserProvider'
+import { UserContext } from '../API/UserProvider'
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker'
 import storage from '@react-native-firebase/storage'
 // import { BACKEND_URL } from '@env'
 
 const Profile = () => {
   // const [userPhoto, setUserPhoto] = useState(null)
-  const { user, setUser } = useUser()
+  const { user, setUser } = useContext(UserContext)
   console.log('From useUser:', user, setUser)
   const userId = user?.userId
 

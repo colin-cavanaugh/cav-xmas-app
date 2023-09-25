@@ -1,18 +1,14 @@
 import React from 'react'
 import { AppRegistry } from 'react-native'
-import App from './App'
+import Main from './Main'
 import { name as appName } from './app.json'
 import { UserProvider } from './components/API/UserProvider'
-import SocketProvider from './components/API/SocketProvider'
-// import ChatProvider from './components/API/ChatProvider'
 
 const AppWithProvider = () => {
   return (
-    <SocketProvider>
-      <UserProvider>
-        <App />
-      </UserProvider>
-    </SocketProvider>
+    <UserProvider>
+      <Main />
+    </UserProvider>
   )
 }
 

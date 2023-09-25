@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
   TouchableOpacity,
@@ -9,13 +9,12 @@ import {
 } from 'react-native'
 import DefaultPhoto from 'react-native-vector-icons/FontAwesome'
 import ChatIcon from 'react-native-vector-icons/SimpleLineIcons'
-import { useUser } from '../API/UserProvider'
+import { UserContext } from '../API/UserProvider'
 import Snowfall from '../Snowflake/Snowfall'
-import ChatDrawer from '../Social/ChatDrawer'
 
 const CustomHeader = () => {
   const navigation = useNavigation()
-  const { user } = useUser()
+  const { user, setUser } = useContext(UserContext)
 
   //   const windowWidth = Dimensions.get('window').width
   //   const snowflakes = Array.from({ length: 100 }).map(() => ({

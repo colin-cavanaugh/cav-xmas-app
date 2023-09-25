@@ -99,6 +99,7 @@ module.exports = function (client) {
         sentRequests: user.sentRequests,
         friendRequests: user.friendRequests,
         isOnline: user.isOnline,
+        friends: user.friends,
       })
     } catch (error) {
       res.status(500).send({ error: `An error occurred ${error.message}` })

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useContext } from 'react'
 import {
   View,
   Text,
@@ -6,110 +6,87 @@ import {
   Button,
   Image,
   StyleSheet,
-  Dimensions,
   ToastAndroid,
 } from 'react-native'
-import axios from 'axios'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useNavigation } from '@react-navigation/native'
-import { useUser } from '../API/UserProvider.js'
-import Snowflake from '../Snowflake/Snowflake.tsx'
+import { UserContext } from '../API/UserProvider.js'
 import Snowfall from '../Snowflake/Snowfall.tsx'
 import {
   validateUsername,
   validatePassword,
 } from '../Validations/validations.js'
 import { loginUser, registerUser } from '../Validations/apiService.js'
+import { fetchUserProfile, login } from '../API/AuthService.js'
 
-const Login = props => {
-  const { setLoggedIn } = props
-  const { user, setUser, login } = useUser()
+const Login = () => {
+  const { user, setUser } = useContext(UserContext)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const navigation = useNavigation()
 
-  const handleLogin = async () => {
+  const showToast = message => {
+    ToastAndroid.showWithGravity(
+      message,
+      ToastAndroid.SHORT,
+      ToastAndroid.CENTER
+    )
+  }
+
+  const handleLocalLogin = async () => {
+    setIsLoading(true)
     try {
-      const response = await loginUser(username, password)
+      const { accessToken, refreshToken, userId } = await login({
+        username,
+        password,
+      })
 
-      if (response.data && response.data.status === 'success') {
-        const { accessToken, refreshToken } = response.data.data
-
-        // Use the login function from the UserContext which should handle storage, etc.
-        login(accessToken, refreshToken)
-
-        ToastAndroid.showWithGravity(
-          'Successfully logged in!',
-          ToastAndroid.SHORT,
-          ToastAndroid.CENTER
-        )
+      if (accessToken && refreshToken && userId) {
+        const userProfile = await fetchUserProfile(userId)
+        setUser({ ...userProfile, accessToken, refreshToken, userId })
+        showToast('Successfully logged in!')
       } else {
-        console.error('Login Failed:', response.data.message)
-        ToastAndroid.showWithGravity(
-          'Login Failed: ' + response.data.message,
-          ToastAndroid.SHORT,
-          ToastAndroid.CENTER
-        )
+        showToast(`Login Failed: Unable to retrieve access tokens and userId.`)
       }
     } catch (error) {
-      console.error('Login Request Failed', error)
-      ToastAndroid.showWithGravity(
-        'Login Failed due to request error.',
-        ToastAndroid.SHORT,
-        ToastAndroid.CENTER
-      )
+      showToast('Login Failed due to request error.')
+      console.error(error)
     }
+    setIsLoading(false)
   }
 
   const handleRegister = async () => {
-    if (!validateUsername(username)) {
-      ToastAndroid.showWithGravity(
-        'Username must include at least one number.',
-        ToastAndroid.SHORT,
-        ToastAndroid.CENTER
+    if (!validateUsername(username))
+      return showToast('Username must include at least one number.')
+    if (!validatePassword(password))
+      return showToast(
+        'Weak password. Min 8 chars, use upper/lowercase, numbers, and [!$#%-].'
       )
-      return
-    }
-    if (!validatePassword(password)) {
-      ToastAndroid.showWithGravity(
-        'Weak password. Min 8 chars, use upper/lowercase, numbers, and [!$#%-].',
-        ToastAndroid.SHORT,
-        ToastAndroid.CENTER
-      )
-      return
-    }
+
     try {
       const response = await registerUser(username, password)
+      console.log('Response from registration:', response)
 
       if (response.data && response.data.status === 'success') {
-        ToastAndroid.showWithGravity(
-          `Successfully Registered as ${username}!`,
-          ToastAndroid.SHORT,
-          ToastAndroid.CENTER
-        )
-        handleLogin()
+        showToast(`Successfully Registered as ${username}!`)
+        handleLocalLogin()
       } else {
-        console.error('Registration Failed:', response.data.message)
+        showToast(`Registration Failed: ${response.data.message}`)
       }
     } catch (error) {
-      console.error('Registration Error:', error)
+      showToast('Registration Error.')
     }
   }
-  // const windowWidth = Dimensions.get('window').width
-  // const snowflakes = Array.from({ length: 100 }).map(() => ({
-  //   size: Math.random() * 10 + 5,
-  //   left: Math.random() * windowWidth,
-  //   duration: Math.random() * 3000 + 2000,
-  // }))
+
   return (
     <View style={styles.container}>
       <Snowfall />
-      <View style={styles.welcomeXmas}>
+      <View style={styles.centerAligned}>
         <Image
           source={require('../Images/xmas_tree_cartoon.png')}
           style={styles.image}
         />
-        <Text style={styles.welcome}>
+        <Text style={styles.boldText}>
           Welcome to Cavanaugh Christmas List V1
         </Text>
         <Text>Please Login Below</Text>
@@ -130,10 +107,14 @@ const Login = props => {
           onChangeText={setPassword}
           placeholder='Password'
         />
-        <View style={{ marginBottom: 10 }}>
-          <Button title='Login' onPress={handleLogin} />
+        <View style={styles.buttonMargin}>
+          <Button
+            title='Login'
+            onPress={handleLocalLogin}
+            disabled={isLoading}
+          />
         </View>
-        <View style={{ marginBottom: 10 }}>
+        <View style={styles.buttonMargin}>
           <Button title='Register' onPress={handleRegister} />
         </View>
       </View>
@@ -142,29 +123,12 @@ const Login = props => {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  welcomeXmas: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  image: {
-    width: 100,
-    height: 100,
-    resizeMode: 'contain',
-  },
-  welcome: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
-  },
+  container: { flex: 1, padding: 20 },
+  centerAligned: { alignItems: 'center', marginBottom: 20 },
+  image: { width: 100, height: 100, resizeMode: 'contain' },
+  boldText: { fontSize: 16, fontWeight: 'bold' },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10 },
+  buttonMargin: { marginBottom: 10 },
 })
 
 export default Login

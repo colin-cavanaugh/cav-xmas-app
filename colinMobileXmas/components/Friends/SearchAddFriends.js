@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import {
   View,
   Text,
@@ -8,14 +8,16 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native'
-import { useUser } from '../API/UserProvider.js'
+import { UserContext } from '../API/UserProvider.js'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import PendingRequests from './PendingRequests.js'
-import { useFriendData } from '../API/FriendsContext.js'
+import { useFriends } from './UseFriends.js'
+import { useSocket } from '../API/SocketProvider.js'
 
 const SearchAddFriends = () => {
-  const { user } = useUser()
+  const { user } = useContext(UserContext)
+  const { socket } = useSocket()
   const userId = user?.userId
   const {
     friends,
@@ -23,10 +25,28 @@ const SearchAddFriends = () => {
     sendFriendRequest: sendRequest,
     pendingReceivedRequests,
     acceptFriendRequest,
-  } = useFriendData(userId)
+  } = useFriends(userId)
 
   const [searchUsername, setSearchUsername] = useState('')
   const [foundUsers, setFoundUsers] = useState([])
+  const [requestFriends, setRequestFriends] = useState([])
+  const [pendingRequests, setPendingRequests] = useState([])
+
+  useEffect(() => {
+    if (socket && userId) {
+      const handleFriendRequestAccepted = data => {
+        // data could contain the newly added friend details
+        setRequestFriends(prevFriends => [...prevFriends, data.newFriend])
+      }
+
+      socket.on('friend-request-accepted', handleFriendRequestAccepted)
+
+      return () => {
+        // Cleanup
+        socket.off('friend-request-accepted', handleFriendRequestAccepted)
+      }
+    }
+  }, [socket, userId])
 
   const findFriend = async () => {
     try {
@@ -45,6 +65,11 @@ const SearchAddFriends = () => {
         }
       )
 
+      if (response.status === 404) {
+        Alert.alert('User Not Found', 'No user found with that username.')
+        return
+      }
+
       if (response.data && response.data.length > 0) {
         setFoundUsers(response.data)
       } else {
@@ -60,20 +85,39 @@ const SearchAddFriends = () => {
       setFoundUsers([])
     }
   }
+  const sendRequestAndUpdateState = async userIdToCheck => {
+    await sendRequest(userIdToCheck)
+    // Now update the local state immediately to reflect the change
+    setFoundUsers(prevFoundUsers =>
+      prevFoundUsers.filter(user => user._id !== userIdToCheck)
+    )
+  }
 
-  const friendStatus = userId => {
-    if (friends.some(friend => friend._id === userId)) {
+  const friendStatus = userIdToCheck => {
+    if (friends.some(friend => friend._id === userIdToCheck)) {
       return null
-    } else if (pendingSentRequests.some(request => request._id === userId)) {
-      return <Text>Request Sent</Text>
+    } else if (
+      pendingSentRequests.some(request => request._id === userIdToCheck)
+    ) {
+      return <Text>Pending</Text>
     } else {
-      return <Button title='Add' onPress={() => sendRequest(userId)} />
+      return (
+        <Button
+          title='Add'
+          onPress={() => sendRequestAndUpdateState(userIdToCheck)}
+        />
+      )
     }
   }
 
   const renderUserItem = ({ item: { _id, username } }) => (
     <TouchableOpacity
-      style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#ccc' }}
+      style={{
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ccc',
+        margin: 5,
+      }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <Text>{username}</Text>
@@ -83,14 +127,15 @@ const SearchAddFriends = () => {
   )
 
   return (
-    <View style={{ padding: 20 }}>
-      <View>
+    <View style={{ padding: 20, flex: 1 }}>
+      {/* <View style={{ marginBottom: 20 }}>
         <PendingRequests />
-      </View>
+      </View> */}
       <Text>Search and Add Friends</Text>
 
       {/* Search Friends */}
       <TextInput
+        style={{ borderColor: 'gray', borderWidth: 1, marginBottom: 20 }}
         value={searchUsername}
         onChangeText={setSearchUsername}
         placeholder='Find User'
@@ -103,13 +148,21 @@ const SearchAddFriends = () => {
         data={foundUsers}
         renderItem={renderUserItem}
         keyExtractor={item => item._id}
+        style={{ marginBottom: 20 }}
       />
 
+      {/* Received Requests */}
       <FlatList
         data={pendingReceivedRequests}
         keyExtractor={item => item._id}
         renderItem={({ item }) => (
-          <View>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              margin: 5,
+            }}
+          >
             <Text>{item.username} sent you a friend request.</Text>
             <Button
               title='Accept'

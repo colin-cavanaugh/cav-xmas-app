@@ -58,10 +58,18 @@ async function fetchFriendsFromDB(client, userId) {
     const user = await db
       .collection('users')
       .findOne({ _id: new ObjectId(userId) })
+
+    // Debug: Log the user object retrieved from the database
+    console.log('Debug: User object from DB:', user)
+
     if (!user) {
       throw new Error(`User with ID: ${userId} not found.`)
     }
-    return user.friendsList || [] // assuming the user object has a property "friendsList" which is an array of friend user IDs.
+
+    // Debug: Log the friends list specifically
+    console.log('Debug: User friends list:', user.friends)
+
+    return user.friends || []
   } catch (error) {
     console.error(`Failed to fetch friends for user ID: ${userId}.`, error)
     return []

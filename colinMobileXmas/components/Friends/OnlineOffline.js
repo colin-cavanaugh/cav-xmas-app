@@ -1,138 +1,72 @@
-import React, { useEffect, useState, useContext, useFocusEffect } from 'react'
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableHighlight,
-  StyleSheet,
-  ToastAndroid,
-} from 'react-native'
-import { useUser } from '../API/UserProvider'
-import { useNavigation } from '@react-navigation/native'
-import { SocketContext } from '../API/SocketContext'
+import React, { useEffect, useContext } from 'react'
+import { View, Text, FlatList, StyleSheet } from 'react-native'
+import { UserContext } from '../API/UserProvider'
+import { useSocket } from '../API/SocketProvider'
 import { useFriends } from './UseFriends'
+import { logAllFriends, logOnlineFriends } from '../utility/utility'
 
 const OnlineOfflineFriends = () => {
-  const { user } = useUser()
-  const navigation = useNavigation()
+  const { user } = useContext(UserContext)
+  const { socket } = useSocket()
   const userId = user?.userId
-  const { friends: initialFriends } = useFriends(userId)
-  console.log('Initial Friends:', initialFriends)
-  const { socket, onlineFriends } = useContext(SocketContext)
-  const [loading, setLoading] = useState(true)
-  const [friendList, setFriendList] = useState([...initialFriends])
-
-  const sortedFriendList = friendList.sort((a, b) => {
-    if (a.isOnline && !b.isOnline) return -1
-    if (!a.isOnline && b.isOnline) return 1
-    return 0
-  })
-  useEffect(() => {
-    if (initialFriends && initialFriends.length > 0) {
-      setFriendList([...initialFriends])
-      setLoading(false)
-    }
-  }, [initialFriends])
+  const {
+    friends: allFriends,
+    onlineFriends,
+    setOnline,
+    setOffline,
+    setInitialOnlineList,
+  } = useFriends(userId)
 
   useEffect(() => {
-    let isChanged = false
-    const updatedList = sortedFriendList.map(friend => {
-      const isCurrentlyOnline = onlineFriends.includes(friend._id)
-      if (friend.isOnline !== isCurrentlyOnline) {
-        isChanged = true
+    if (socket && userId) {
+      const handleOnlineFriends = data => {
+        setInitialOnlineList(data)
       }
+
+      const handleUserOnline = data => {
+        setOnline(data.userId)
+      }
+
+      const handleUserOffline = data => {
+        setOffline(data.userId)
+      }
+
+      socket.on('get-online-friends', handleOnlineFriends)
+      socket.on('user-online', handleUserOnline)
+      socket.on('user-offline', handleUserOffline)
+
+      return () => {
+        socket.off('get-online-friends', handleOnlineFriends)
+        socket.off('user-online', handleUserOnline)
+        socket.off('user-offline', handleUserOffline)
+      }
+    }
+  }, [socket, userId])
+
+  // Initialize friend list when friends are fetched
+  useEffect(() => {
+    logOnlineFriends(user, onlineFriends) // Debugging log
+    const updatedAllFriends = allFriends.map(friend => {
       return {
         ...friend,
-        isOnline: isCurrentlyOnline,
+        isOnline: onlineFriends.includes(friend._id),
       }
     })
-
-    if (isChanged) {
-      setFriendList(updatedList)
-    }
+    logAllFriends(user, updatedAllFriends) // Debugging log
   }, [onlineFriends])
-
-  useEffect(() => {
-    if (!socket || !socket.connected) return
-
-    const handleFriendOnline = friendId => {
-      const friend = friendList.find(f => f._id === friendId)
-      if (friend && friend.username) {
-        ToastAndroid.showWithGravity(
-          `${friend.username} is online!`,
-          ToastAndroid.SHORT,
-          ToastAndroid.BOTTOM
-        )
-      }
-      const updatedList = friendList.map(friend => {
-        if (friend._id === friendId) {
-          return { ...friend, isOnline: true }
-        }
-        return friend
-      })
-      setFriendList(updatedList)
-    }
-
-    const handleFriendOffline = friendId => {
-      const friend = friendList.find(f => f._id === friendId)
-      if (friend && friend.username) {
-        ToastAndroid.showWithGravity(
-          `${friend.username} is offline.`,
-          ToastAndroid.SHORT,
-          ToastAndroid.BOTTOM
-        )
-      }
-      const updatedList = friendList.map(friend => {
-        if (friend._id === friendId) {
-          return { ...friend, isOnline: false }
-        }
-        return friend
-      })
-      setFriendList(updatedList)
-    }
-
-    socket.on('friend-online', handleFriendOnline)
-    socket.on('friend-offline', handleFriendOffline)
-
-    return () => {
-      socket.off('friend-online', handleFriendOnline)
-      socket.off('friend-offline', handleFriendOffline)
-    }
-  }, [socket, friendList])
-
-  const handleOpenChat = friend => {
-    console.log(
-      'Current User:',
-      user.username,
-      'Friend Pressed:',
-      'Id:',
-      friend._id,
-      'Username:',
-      friend.username
-    )
-    navigation.navigate('ChatRoom', { friendId: friend._id })
-  }
-  if (loading) {
-    return <Text>Loading friends...</Text>
-  }
 
   return (
     <View style={styles.container}>
       <View style={styles.friendsListContainer}>
         <Text>Your Friends</Text>
         <FlatList
-          data={friendList}
+          data={allFriends}
           keyExtractor={item => item._id}
           renderItem={({ item }) => (
-            <TouchableHighlight
-              underlayColor='#F0F0F0'
-              onPress={() => handleOpenChat(item)}
-            >
-              <View style={styles.friendItem}>
-                <View style={styles.statusIndicator(item.isOnline)} />
-                <Text style={{ fontSize: 14 }}>{item.username}</Text>
-              </View>
-            </TouchableHighlight>
+            <View style={styles.friendItem}>
+              <View style={styles.statusIndicator(item.isOnline)} />
+              <Text style={{ fontSize: 14 }}>{item.username}</Text>
+            </View>
           )}
         />
       </View>
@@ -153,10 +87,10 @@ const styles = StyleSheet.create({
   friendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingVertical: 10,
-    borderBottomWidth: 0.5, // subtle line for separation
-    borderBottomColor: '#E0E0E0', // light grey color
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E0E0E0',
   },
   statusIndicator: isOnline => ({
     height: 10,

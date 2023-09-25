@@ -8,3 +8,23 @@ export const logEvent = (event, location, userId) => {
     `[${timeStamp}] [${location}] Emitting event: ${event} for User ID: ${userId}`
   )
 }
+export const logAllFriends = (user, allFriends) => {
+  if (allFriends) {
+    allFriends.forEach(friend => {
+      console.log(`${user.username}'s Friends:
+    Username: ${friend.username},
+    isOnline?: ${friend.isOnline}
+    `)
+    })
+  }
+}
+export const logOnlineFriends = (user, onlineFriends) => {
+  if (onlineFriends) {
+    onlineFriends.forEach(friend => {
+      console.log(`${user.username}'s Online Friends:
+      Username: ${friend.username},
+      isOnline?: ${friend.isOnline}
+      `)
+    })
+  }
+}

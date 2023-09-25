@@ -1,16 +1,16 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { View, Text, FlatList, Button } from 'react-native'
-import { useUser } from '../API/UserProvider.js'
-import { useFriendData } from '../API/FriendsContext.js'
+import { UserContext } from '../API/UserProvider'
+import { useFriends } from './UseFriends.js'
 
 const PendingRequests = () => {
-  const { user } = useUser()
+  const { user } = useContext(UserContext)
   const userId = user?.userId
   const {
     pendingSentRequests,
     pendingReceivedRequests,
     acceptFriendRequest,
-  } = useFriendData(userId)
+  } = useFriends(userId)
 
   return (
     <View style={{ padding: 20 }}>

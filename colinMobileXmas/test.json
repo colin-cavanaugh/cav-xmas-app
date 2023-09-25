@@ -1,0 +1,105 @@
+{
+  "config": {
+    "adapter": "xhr",
+    "data": "{\"username\":\"Cavanaugh1987\",\"password\":\"Password-456\"}",
+    "env": { "Blob": ["Function Blob"], "FormData": ["Function FormData"] },
+    "headers": ["Object"],
+    "maxBodyLength": -1,
+    "maxContentLength": -1,
+    "method": "post",
+    "timeout": 0,
+    "transformRequest": [["Function transformRequest"]],
+    "transformResponse": [["Function transformResponse"]],
+    "transitional": {
+      "clarifyTimeoutError": false,
+      "forcedJSONParsing": true,
+      "silentJSONParsing": true
+    },
+    "url": "http://192.168.0.12:8000/api/login",
+    "validateStatus": ["Function validateStatus"],
+    "xsrfCookieName": "XSRF-TOKEN",
+    "xsrfHeaderName": "X-XSRF-TOKEN"
+  },
+  "data": {
+    "data": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTEwN2IwNTMyODI4NDg0NTNhOTcwYzQiLCJpYXQiOjE2OTU1ODI3MTksImV4cCI6MTY5NTU4NjMxOX0.iI4eJR48zUO7TK3oHo1JtdfWkuiodRgaOr_zXHu1FzI",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTEwN2IwNTMyODI4NDg0NTNhOTcwYzQiLCJpYXQiOjE2OTU1ODI3MTksImV4cCI6MTY5NjE4NzUxOX0.wzoD3LvWHwaJ0HBmaOGflQmxLpbL_QKTzMz5SSPXnqs"
+    },
+    "message": "Login Successful",
+    "status": "success"
+  },
+  "headers": {
+    "access-control-allow-credentials": "true",
+    "connection": "keep-alive",
+    "content-length": "445",
+    "content-type": "application/json; charset=utf-8",
+    "date": "Sun, 24 Sep 2023 19:11:59 GMT",
+    "etag": "W/\"1bd-MsWoPV+e1XgG8Pwfzu7ndwyWdcs\"",
+    "keep-alive": "timeout=5",
+    "vary": "Origin",
+    "x-powered-by": "Express"
+  },
+  "request": {
+    "DONE": 4,
+    "HEADERS_RECEIVED": 2,
+    "LOADING": 3,
+    "OPENED": 1,
+    "UNSENT": 0,
+    "_aborted": false,
+    "_cachedResponse": "undefined",
+    "_hasError": false,
+    "_headers": {
+      "accept": "application/json, text/plain, */*",
+      "content-type": "application/json"
+    },
+    "_incrementalEvents": false,
+    "_lowerCaseResponseHeaders": {
+      "access-control-allow-credentials": "true",
+      "connection": "keep-alive",
+      "content-length": "445",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 24 Sep 2023 19:11:59 GMT",
+      "etag": "W/\"1bd-MsWoPV+e1XgG8Pwfzu7ndwyWdcs\"",
+      "keep-alive": "timeout=5",
+      "vary": "Origin",
+      "x-powered-by": "Express"
+    },
+    "_method": "POST",
+    "_perfKey": "network_XMLHttpRequest_http://192.168.0.12:8000/api/login",
+    "_performanceLogger": {
+      "_closed": false,
+      "_extras": ["Object"],
+      "_isLoggingForWebPerformance": false,
+      "_pointExtras": ["Object"],
+      "_points": ["Object"],
+      "_timespans": ["Object"]
+    },
+    "_requestId": null,
+    "_response": "{\"status\":\"success\",\"data\":{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTEwN2IwNTMyODI4NDg0NTNhOTcwYzQiLCJpYXQiOjE2OTU1ODI3MTksImV4cCI6MTY5NTU4NjMxOX0.iI4eJR48zUO7TK3oHo1JtdfWkuiodRgaOr_zXHu1FzI\",\"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTEwN2IwNTMyODI4NDg0NTNhOTcwYzQiLCJpYXQiOjE2OTU1ODI3MTksImV4cCI6MTY5NjE4NzUxOX0.wzoD3LvWHwaJ0HBmaOGflQmxLpbL_QKTzMz5SSPXnqs\"},\"message\":\"Login Successful\"}",
+    "_responseType": "",
+    "_sent": true,
+    "_subscriptions": [],
+    "_timedOut": false,
+    "_trackingName": "unknown",
+    "_url": "http://192.168.0.12:8000/api/login",
+    "readyState": 4,
+    "responseHeaders": {
+      "Access-Control-Allow-Credentials": "true",
+      "Connection": "keep-alive",
+      "Content-Length": "445",
+      "Content-Type": "application/json; charset=utf-8",
+      "Date": "Sun, 24 Sep 2023 19:11:59 GMT",
+      "ETag": "W/\"1bd-MsWoPV+e1XgG8Pwfzu7ndwyWdcs\"",
+      "Keep-Alive": "timeout=5",
+      "Vary": "Origin",
+      "X-Powered-By": "Express"
+    },
+    "responseURL": "http://192.168.0.12:8000/api/login",
+    "status": 200,
+    "timeout": 0,
+    "upload": {},
+    "withCredentials": true
+  },
+  "status": 200,
+  "statusText": "undefined"
+}

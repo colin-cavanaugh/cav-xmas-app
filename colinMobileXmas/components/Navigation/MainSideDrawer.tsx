@@ -5,9 +5,8 @@ import { Dimensions } from 'react-native'
 import BottomTabNavigator from './BottomTabNavigator'
 import Profile from '../Profile/Profile'
 import Events from '../Events/Events'
-import { RootStackParamList } from '../../App'
 
-const Drawer = createDrawerNavigator<RootStackParamList>()
+const Drawer = createDrawerNavigator()
 
 function MainSideDrawer() {
   return (

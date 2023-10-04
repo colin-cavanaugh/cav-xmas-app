@@ -1,25 +1,34 @@
-import React, { useEffect, useContext } from 'react'
+import React, { useEffect, useContext, useState } from 'react'
 import { View, Text, FlatList, StyleSheet } from 'react-native'
 import { UserContext } from '../API/UserProvider'
 import { useSocket } from '../API/SocketProvider'
 import { useFriends } from './UseFriends'
 import { logAllFriends, logOnlineFriends } from '../utility/utility'
+import { useFocusEffect } from '@react-navigation/native'
 
 const OnlineOfflineFriends = () => {
   const { user } = useContext(UserContext)
   const { socket } = useSocket()
   const userId = user?.userId
+  const [displayFriends, setDisplayFriends] = useState([])
   const {
     friends: allFriends,
     onlineFriends,
     setOnline,
     setOffline,
     setInitialOnlineList,
+    fetchFriendData,
   } = useFriends(userId)
 
-  useEffect(() => {
-    if (socket && userId) {
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('OnlineOfflineFriends screen focused!')
+      fetchFriendData()
+
+      // Socket handlers
       const handleOnlineFriends = data => {
+        console.log('handleOnlineFriends triggered')
+        console.log('handleOnlineFriends data: ', data)
         setInitialOnlineList(data)
       }
 
@@ -31,36 +40,41 @@ const OnlineOfflineFriends = () => {
         setOffline(data.userId)
       }
 
-      socket.on('get-online-friends', handleOnlineFriends)
-      socket.on('user-online', handleUserOnline)
-      socket.on('user-offline', handleUserOffline)
+      // Set up socket event listeners
+      if (socket && userId) {
+        socket.on('online-friends-list', handleOnlineFriends)
+        socket.on('friend-came-online', handleUserOnline)
+        socket.on('friend-went-offline', handleUserOffline)
+      }
 
       return () => {
-        socket.off('get-online-friends', handleOnlineFriends)
-        socket.off('user-online', handleUserOnline)
-        socket.off('user-offline', handleUserOffline)
+        // Clean up socket event listeners
+        if (socket) {
+          socket.off('online-friends-list', handleOnlineFriends)
+          socket.off('friend-came-online', handleUserOnline)
+          socket.off('friend-went-offline', handleUserOffline)
+        }
       }
-    }
-  }, [socket, userId])
+    }, [socket, userId])
+  )
 
   // Initialize friend list when friends are fetched
   useEffect(() => {
-    logOnlineFriends(user, onlineFriends) // Debugging log
     const updatedAllFriends = allFriends.map(friend => {
       return {
         ...friend,
-        isOnline: onlineFriends.includes(friend._id),
+        isOnline: onlineFriends.includes(friend.id),
       }
     })
-    logAllFriends(user, updatedAllFriends) // Debugging log
-  }, [onlineFriends])
+    setDisplayFriends(updatedAllFriends)
+  }, [onlineFriends, allFriends])
 
   return (
     <View style={styles.container}>
       <View style={styles.friendsListContainer}>
         <Text>Your Friends</Text>
         <FlatList
-          data={allFriends}
+          data={displayFriends}
           keyExtractor={item => item._id}
           renderItem={({ item }) => (
             <View style={styles.friendItem}>

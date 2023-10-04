@@ -88,14 +88,4 @@
 // }
 
 // export default ChatProvider
-import React from 'react'
-import { View, Text } from 'react-native'
-const ChatProvider = () => {
-  return (
-    <View>
-      <Text>ChatProvider</Text>
-    </View>
-  )
-}
 
-export default ChatProvider

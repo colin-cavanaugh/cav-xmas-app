@@ -40,9 +40,10 @@ app.use((req, res, next) => {
 
 client
   .connect()
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB')
-
+    const collection = client.db('cavanaughDB').collection('onlineUsers')
+    await collection.deleteMany({})
     // Routes
     app.get('/', (req, res) => {
       res.send('Hello, Express is running!')
@@ -52,7 +53,7 @@ client
     socketController.init(server, client)
 
     const userRoutes = require('./routes/userRoutes')(client)
-    const friendsRoutes = require('./routes/friendsRoutes')(client)
+    const friendsRoutes = require('./routes/friendsRoutes')(client, io)
     const authRoutes = require('./routes/authRoutes')(client, io)
 
     // Use routes

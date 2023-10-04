@@ -1,5 +1,6 @@
 const express = require('express')
 const { ObjectId } = require('mongodb')
+const { getUserById } = require('./dbOperations')
 // Adjust path accordingly
 module.exports = function (client) {
   const router = express.Router()
@@ -71,39 +72,57 @@ module.exports = function (client) {
     }
   })
   ///////////////// User Id Endpoint //////////////////////
+  // router.get('/api/user/:id', authenticateJWT, async (req, res) => {
+  //   console.log('GET api/user/:id endpoint called')
+  //   try {
+  //     const userId = req.params.id
+
+  //     if (!userId.match(/^[0-9a-fA-F]{24}$/)) {
+  //       return res
+  //         .status(400)
+  //         .send({ error: 'Invalid userId format api/user/:id endpoint' })
+  //     }
+
+  //     const user = await client
+  //       .db('cavanaughDB')
+  //       .collection('users')
+  //       .findOne({ _id: new ObjectId(userId) })
+
+  //     // console.log('Found user:', user) // Debug log
+
+  //     if (!user) {
+  //       return res.status(404).send({ error: 'User not found' })
+  //     }
+  //     // console.log('User from user/:id endpoint: ', user)
+  //     res.send({
+  //       username: user.username,
+  //       photoUrl: user.photoUrl,
+  //       sentRequests: user.sentRequests,
+  //       friendRequests: user.friendRequests,
+  //       isOnline: user.isOnline,
+  //       friends: user.friends,
+  //     })
+  //   } catch (error) {
+  //     res.status(500).send({ error: `An error occurred ${error.message}` })
+  //     console.error('Error encountered:', error)
+  //   }
+  // })
   router.get('/api/user/:id', authenticateJWT, async (req, res) => {
     console.log('GET api/user/:id endpoint called')
     try {
       const userId = req.params.id
 
-      if (!userId.match(/^[0-9a-fA-F]{24}$/)) {
-        return res
-          .status(400)
-          .send({ error: 'Invalid userId format api/user/:id endpoint' })
-      }
+      const user = await getUserById(client, userId)
 
-      const user = await client
-        .db('cavanaughDB')
-        .collection('users')
-        .findOne({ _id: new ObjectId(userId) })
-
-      // console.log('Found user:', user) // Debug log
-
-      if (!user) {
-        return res.status(404).send({ error: 'User not found' })
-      }
-      // console.log('User from user/:id endpoint: ', user)
-      res.send({
-        username: user.username,
-        photoUrl: user.photoUrl,
-        sentRequests: user.sentRequests,
-        friendRequests: user.friendRequests,
-        isOnline: user.isOnline,
-        friends: user.friends,
-      })
+      res.send(user)
     } catch (error) {
-      res.status(500).send({ error: `An error occurred ${error.message}` })
-      console.error('Error encountered:', error)
+      if (error.message === 'Invalid userId format') {
+        res.status(400).send({ error: error.message })
+      } else if (error.message === 'User not found') {
+        res.status(404).send({ error: error.message })
+      } else {
+        res.status(500).send({ error: `An error occurred: ${error.message}` })
+      }
     }
   })
   return router

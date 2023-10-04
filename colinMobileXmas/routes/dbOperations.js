@@ -75,9 +75,37 @@ async function fetchFriendsFromDB(client, userId) {
     return []
   }
 }
+async function getUserById(client, userId) {
+  try {
+    if (!userId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error('Invalid userId format')
+    }
 
+    const user = await client
+      .db('cavanaughDB')
+      .collection('users')
+      .findOne({ _id: new ObjectId(userId) })
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    return {
+      username: user.username,
+      photoUrl: user.photoUrl,
+      sentRequests: user.sentRequests,
+      friendRequests: user.friendRequests,
+      isOnline: user.isOnline,
+      friends: user.friends,
+    }
+  } catch (error) {
+    console.error('Error encountered:', error)
+    throw error
+  }
+}
 module.exports = {
   markUserOnline,
   markUserOffline,
   fetchFriendsFromDB,
+  getUserById,
 }

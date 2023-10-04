@@ -7,12 +7,10 @@ const { ObjectId } = require('mongodb')
 
 const ACCESS_SECRET = process.env.ACCESS_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
-const { offlineTimers, onlineUsers } = require('../socketController')
 
 module.exports = function (client, io) {
   const router = express.Router()
   const { sendResponse } = require('./utils')
-  const { markUserOnline, markUserOffline } = require('./dbOperations')
 
   router.post('/api/register', async (req, res) => {
     console.log('POST api/register endpoint called')
@@ -73,11 +71,6 @@ module.exports = function (client, io) {
       const isMatch = await bcrypt.compare(password, user.password)
 
       if (isMatch) {
-        console.log('About to mark user online')
-        await markUserOnline(client, user._id) // Assuming markUserOnline only requires the userId
-        io.emit('user-online', user._id)
-        console.log('Marked user online')
-
         const token = jwt.sign({ userId: user._id.toString() }, ACCESS_SECRET, {
           expiresIn: '1h',
         })
@@ -126,9 +119,6 @@ module.exports = function (client, io) {
         return sendResponse(res, 'error', null, 'Token verification failed')
       }
 
-      await markUserOffline(client, new ObjectId(user.userId)) // Assuming markUserOffline only requires the userId
-      io.emit('user-offline', new ObjectId(user.userId))
-
       // Remove refresh token (optional but recommended for security)
       await client
         .db('cavanaughDB')
@@ -161,14 +151,8 @@ module.exports = function (client, io) {
       if (err)
         return sendResponse(res, 'error', null, 'Token verification failed')
 
-      // Update user's online status
-      await client
-        .db('cavanaughDB')
-        .collection('users')
-        .updateOne(
-          { _id: new ObjectId(user.userId) },
-          { $set: { isOnline: true } }
-        )
+      // Not updating online status in the database,
+      // handling online/offline through sockets.
 
       const accessToken = jwt.sign({ userId: user.userId }, ACCESS_SECRET, {
         expiresIn: '1h',
@@ -177,6 +161,5 @@ module.exports = function (client, io) {
       return sendResponse(res, 'success', { accessToken }, 'Token refreshed')
     })
   })
-
   return router
 }

@@ -17,6 +17,7 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (user && !socket) {
       const newSocket = io('http://192.168.0.12:8000')
+
       setSocket(newSocket)
       setLoading(false)
 

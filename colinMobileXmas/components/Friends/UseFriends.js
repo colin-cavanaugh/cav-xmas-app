@@ -164,5 +164,6 @@ export const useFriends = userId => {
     setInitialOnlineList,
     acceptFriendRequest, // Assume this is defined
     sendFriendRequest, // Assume this is defined
+    fetchFriendData,
   }
 }

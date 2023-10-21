@@ -3,6 +3,7 @@ import { USER_TOKEN_KEY } from './AuthService'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import jwtDecode from 'jwt-decode'
 import { ToastAndroid, Text } from 'react-native'
+import Toast from 'react-native-toast-message';
 import { fetchUserProfile } from './AuthService'
 
 export const UserContext = createContext()
@@ -18,12 +19,20 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(initialUserState)
 
   const showToast = message => {
-    ToastAndroid.showWithGravity(
-      message,
-      ToastAndroid.SHORT,
-      ToastAndroid.CENTER
-    )
+    // ToastAndroid.showWithGravity(
+    //   message,
+    //   ToastAndroid.SHORT,
+    //   ToastAndroid.CENTER
+    // )
+    Toast.show({
+      type: 'default',  // this can be 'default', 'success', 'error', 'info' based on the context
+      position: 'bottom',
+      text1: message,
+      visibilityTime: 3000,  // duration in ms
+    });
   }
+
+  
 
   const refreshUserProfile = useCallback(async () => {
     if (!user || !user.userId) {

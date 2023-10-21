@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ToastAndroid,
 } from 'react-native'
+import Toast from 'react-native-toast-message'
 import { useNavigation } from '@react-navigation/native'
 import { UserContext } from '../API/UserProvider.js'
 import Snowfall from '../Snowflake/Snowfall.tsx'
@@ -26,11 +27,17 @@ const Login = () => {
   const navigation = useNavigation()
 
   const showToast = message => {
-    ToastAndroid.showWithGravity(
-      message,
-      ToastAndroid.SHORT,
-      ToastAndroid.CENTER
-    )
+    // ToastAndroid.showWithGravity(
+    //   message,
+    //   ToastAndroid.SHORT,
+    //   ToastAndroid.CENTER
+    // )
+    Toast.show({
+      type: 'default',  // this can be 'default', 'success', 'error', 'info' based on the context
+      position: 'bottom',
+      text1: message,
+      visibilityTime: 3000,  // duration in ms
+    });
   }
 
   const handleLocalLogin = async () => {
